@@ -14,7 +14,240 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          booking_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+        }
+        Insert: {
+          action: string
+          booking_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          booking_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_slots: {
+        Row: {
+          created_at: string
+          date: string
+          end_time: string
+          id: string
+          is_closed: boolean
+          label: string | null
+          price: number
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          end_time: string
+          id?: string
+          is_closed?: boolean
+          label?: string | null
+          price?: number
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          end_time?: string
+          id?: string
+          is_closed?: boolean
+          label?: string | null
+          price?: number
+          start_time?: string
+        }
+        Relationships: []
+      }
+      bookings: {
+        Row: {
+          booking_number: string
+          booking_status: Database["public"]["Enums"]["booking_status"]
+          created_at: string
+          customer_id: string
+          deposit_amount: number
+          discount: number
+          id: string
+          notes: string | null
+          paid_amount: number
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          people_count: number
+          remaining_amount: number
+          slot_id: string
+          subtotal: number
+          updated_at: string
+        }
+        Insert: {
+          booking_number: string
+          booking_status?: Database["public"]["Enums"]["booking_status"]
+          created_at?: string
+          customer_id: string
+          deposit_amount?: number
+          discount?: number
+          id?: string
+          notes?: string | null
+          paid_amount?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          people_count?: number
+          remaining_amount?: number
+          slot_id: string
+          subtotal?: number
+          updated_at?: string
+        }
+        Update: {
+          booking_number?: string
+          booking_status?: Database["public"]["Enums"]["booking_status"]
+          created_at?: string
+          customer_id?: string
+          deposit_amount?: number
+          discount?: number
+          id?: string
+          notes?: string | null
+          paid_amount?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          people_count?: number
+          remaining_amount?: number
+          slot_id?: string
+          subtotal?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: true
+            referencedRelation: "booking_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          booking_id: string
+          channel: Database["public"]["Enums"]["reminder_channel"]
+          id: string
+          message_body: string
+          sent_at: string
+          status: Database["public"]["Enums"]["reminder_status"]
+        }
+        Insert: {
+          booking_id: string
+          channel: Database["public"]["Enums"]["reminder_channel"]
+          id?: string
+          message_body: string
+          sent_at?: string
+          status?: Database["public"]["Enums"]["reminder_status"]
+        }
+        Update: {
+          booking_id?: string
+          channel?: Database["public"]["Enums"]["reminder_channel"]
+          id?: string
+          message_body?: string
+          sent_at?: string
+          status?: Database["public"]["Enums"]["reminder_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +256,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      booking_status: "new" | "confirmed" | "completed" | "cancelled"
+      payment_status: "unpaid" | "partial" | "paid"
+      reminder_channel: "email" | "whatsapp"
+      reminder_status: "sent" | "pending" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +386,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_status: ["new", "confirmed", "completed", "cancelled"],
+      payment_status: ["unpaid", "partial", "paid"],
+      reminder_channel: ["email", "whatsapp"],
+      reminder_status: ["sent", "pending", "failed"],
+    },
   },
 } as const
