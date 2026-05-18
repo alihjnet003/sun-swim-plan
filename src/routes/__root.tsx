@@ -51,7 +51,6 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AppShell />
       <Toaster richColors position="top-right" />
-      <Outlet />
     </QueryClientProvider>
   );
 }
