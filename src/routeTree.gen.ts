@@ -9,14 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as SlotsRouteImport } from './routes/slots'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as BackupsRouteImport } from './routes/backups'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BookingsIdRouteImport } from './routes/bookings.$id'
+import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SlotsRoute = SlotsRouteImport.update({
   id: '/slots',
   path: '/slots',
@@ -42,6 +50,11 @@ const BookingsRoute = BookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BackupsRoute = BackupsRouteImport.update({
+  id: '/backups',
+  path: '/backups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -52,76 +65,110 @@ const BookingsIdRoute = BookingsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => BookingsRoute,
 } as any)
+const ApiPublicHooksDailyBackupRoute =
+  ApiPublicHooksDailyBackupRouteImport.update({
+    id: '/api/public/hooks/daily-backup',
+    path: '/api/public/hooks/daily-backup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/backups': typeof BackupsRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
+  '/users': typeof UsersRoute
   '/bookings/$id': typeof BookingsIdRoute
+  '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/backups': typeof BackupsRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
+  '/users': typeof UsersRoute
   '/bookings/$id': typeof BookingsIdRoute
+  '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/backups': typeof BackupsRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
+  '/users': typeof UsersRoute
   '/bookings/$id': typeof BookingsIdRoute
+  '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/backups'
     | '/bookings'
     | '/calendar'
     | '/login'
     | '/reports'
     | '/slots'
+    | '/users'
     | '/bookings/$id'
+    | '/api/public/hooks/daily-backup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/backups'
     | '/bookings'
     | '/calendar'
     | '/login'
     | '/reports'
     | '/slots'
+    | '/users'
     | '/bookings/$id'
+    | '/api/public/hooks/daily-backup'
   id:
     | '__root__'
     | '/'
+    | '/backups'
     | '/bookings'
     | '/calendar'
     | '/login'
     | '/reports'
     | '/slots'
+    | '/users'
     | '/bookings/$id'
+    | '/api/public/hooks/daily-backup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BackupsRoute: typeof BackupsRoute
   BookingsRoute: typeof BookingsRouteWithChildren
   CalendarRoute: typeof CalendarRoute
   LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
   SlotsRoute: typeof SlotsRoute
+  UsersRoute: typeof UsersRoute
+  ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/slots': {
       id: '/slots'
       path: '/slots'
@@ -157,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/backups': {
+      id: '/backups'
+      path: '/backups'
+      fullPath: '/backups'
+      preLoaderRoute: typeof BackupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -170,6 +224,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/bookings/$id'
       preLoaderRoute: typeof BookingsIdRouteImport
       parentRoute: typeof BookingsRoute
+    }
+    '/api/public/hooks/daily-backup': {
+      id: '/api/public/hooks/daily-backup'
+      path: '/api/public/hooks/daily-backup'
+      fullPath: '/api/public/hooks/daily-backup'
+      preLoaderRoute: typeof ApiPublicHooksDailyBackupRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -188,11 +249,14 @@ const BookingsRouteWithChildren = BookingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BackupsRoute: BackupsRoute,
   BookingsRoute: BookingsRouteWithChildren,
   CalendarRoute: CalendarRoute,
   LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
   SlotsRoute: SlotsRoute,
+  UsersRoute: UsersRoute,
+  ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
