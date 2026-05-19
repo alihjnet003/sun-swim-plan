@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SlotsRouteImport } from './routes/slots'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as IndexRouteImport } from './routes/index'
@@ -24,6 +25,11 @@ const SlotsRoute = SlotsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarRoute = CalendarRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
+  '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
   '/bookings/$id': typeof BookingsIdRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
+  '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
   '/bookings/$id': typeof BookingsIdRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
+  '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
   '/bookings/$id': typeof BookingsIdRoute
@@ -78,16 +87,25 @@ export interface FileRouteTypes {
     | '/'
     | '/bookings'
     | '/calendar'
+    | '/login'
     | '/reports'
     | '/slots'
     | '/bookings/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/bookings' | '/calendar' | '/reports' | '/slots' | '/bookings/$id'
+  to:
+    | '/'
+    | '/bookings'
+    | '/calendar'
+    | '/login'
+    | '/reports'
+    | '/slots'
+    | '/bookings/$id'
   id:
     | '__root__'
     | '/'
     | '/bookings'
     | '/calendar'
+    | '/login'
     | '/reports'
     | '/slots'
     | '/bookings/$id'
@@ -97,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BookingsRoute: typeof BookingsRouteWithChildren
   CalendarRoute: typeof CalendarRoute
+  LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
   SlotsRoute: typeof SlotsRoute
 }
@@ -115,6 +134,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendar': {
@@ -164,9 +190,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BookingsRoute: BookingsRouteWithChildren,
   CalendarRoute: CalendarRoute,
+  LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
   SlotsRoute: SlotsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

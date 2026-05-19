@@ -1,12 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  createRootRouteWithContext,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+import { Outlet, createRootRouteWithContext, HeadContent, Scripts, useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/AppShell";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
 import appCss from "../styles.css?url";
 
@@ -49,8 +46,29 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell />
-      <Toaster richColors position="top-right" />
+      <AuthProvider>
+        <AuthGate />
+        <Toaster richColors position="top-right" />
+      </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function AuthGate() {
+  const { session, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isLogin = location.pathname === "/login";
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session && !isLogin) navigate({ to: "/login" });
+  }, [loading, session, isLogin, navigate]);
+
+  if (loading) {
+    return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
+  }
+  if (isLogin) return <Outlet />;
+  if (!session) return null;
+  return <AppShell />;
 }
