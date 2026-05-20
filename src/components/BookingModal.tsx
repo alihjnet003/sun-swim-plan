@@ -20,6 +20,7 @@ interface Props {
 
 export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const { data: customers = [] } = useCustomers();
+  const { data: availableSlots = [] } = useAvailableSlots(booking?.slot_id);
   const invalidate = useInvalidateAll();
   const [saving, setSaving] = useState(false);
 
@@ -31,6 +32,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
     whatsapp: "",
     email: "",
     customer_notes: "",
+    slot_id: "",
     booking_status: "new" as "new" | "confirmed" | "completed" | "cancelled",
     subtotal: 0,
     discount: 0,
@@ -50,6 +52,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         whatsapp: "",
         email: "",
         customer_notes: "",
+        slot_id: booking.slot_id,
         booking_status: booking.booking_status,
         subtotal: Number(booking.subtotal),
         discount: Number(booking.discount),
@@ -59,7 +62,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         notes: booking.notes ?? "",
       });
     } else if (slot) {
-      setForm((f) => ({ ...f, subtotal: Number(slot.price), customer_id: "", new_customer: customers.length === 0 }));
+      setForm((f) => ({ ...f, slot_id: slot.id, subtotal: Number(slot.price), customer_id: "", new_customer: customers.length === 0 }));
     }
   }, [booking, slot, customers.length, open]);
 
@@ -67,7 +70,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const remaining = Math.max(0, total - form.paid_amount);
   const paymentStatus = computePaymentStatus(form.paid_amount, total);
 
-  const targetSlot = booking?.slot ?? slot;
+  const targetSlot =
+    availableSlots.find((s) => s.id === form.slot_id) ?? booking?.slot ?? slot ?? null;
 
   async function handleSave() {
     if (!targetSlot) return;
