@@ -11,6 +11,7 @@ export const Route = createFileRoute("/bookings")({ component: BookingsList });
 
 function BookingsList() {
   const { data: bookings = [], isLoading } = useAllBookings();
+  const { data: profiles } = useProfilesMap();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [payment, setPayment] = useState("all");
