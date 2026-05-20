@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
+import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
 import { computePaymentStatus, fmtDate, generateBookingNumber, slotTimeRange } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -20,6 +20,7 @@ interface Props {
 
 export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const { data: customers = [] } = useCustomers();
+  const { data: availableSlots = [] } = useAvailableSlots(booking?.slot_id);
   const invalidate = useInvalidateAll();
   const [saving, setSaving] = useState(false);
 
@@ -31,6 +32,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
     whatsapp: "",
     email: "",
     customer_notes: "",
+    slot_id: "",
     booking_status: "new" as "new" | "confirmed" | "completed" | "cancelled",
     subtotal: 0,
     discount: 0,
@@ -50,6 +52,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         whatsapp: "",
         email: "",
         customer_notes: "",
+        slot_id: booking.slot_id,
         booking_status: booking.booking_status,
         subtotal: Number(booking.subtotal),
         discount: Number(booking.discount),
@@ -59,7 +62,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         notes: booking.notes ?? "",
       });
     } else if (slot) {
-      setForm((f) => ({ ...f, subtotal: Number(slot.price), customer_id: "", new_customer: customers.length === 0 }));
+      setForm((f) => ({ ...f, slot_id: slot.id, subtotal: Number(slot.price), customer_id: "", new_customer: customers.length === 0 }));
     }
   }, [booking, slot, customers.length, open]);
 
@@ -67,7 +70,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const remaining = Math.max(0, total - form.paid_amount);
   const paymentStatus = computePaymentStatus(form.paid_amount, total);
 
-  const targetSlot = booking?.slot ?? slot;
+  const targetSlot =
+    availableSlots.find((s) => s.id === form.slot_id) ?? booking?.slot ?? slot ?? null;
 
   async function handleSave() {
     if (!targetSlot) return;
@@ -228,23 +232,41 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
           {/* Booking */}
           <section>
             <h3 className="text-sm font-semibold mb-2">Booking</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
-                <Label>People</Label>
-                <Input type="number" min={1} value={form.people_count}
-                  onChange={(e) => setForm({ ...form, people_count: Number(e.target.value) })} />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select value={form.booking_status} onValueChange={(v: any) => setForm({ ...form, booking_status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Label>Slot (date &amp; time)</Label>
+                <Select value={form.slot_id} onValueChange={(v) => {
+                  const s = availableSlots.find((x) => x.id === v);
+                  setForm((f) => ({ ...f, slot_id: v, subtotal: s ? Number(s.price) : f.subtotal }));
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Choose a slot" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    {availableSlots.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {fmtDate(s.date)} · {slotTimeRange(s.start_time, s.end_time)} · ${Number(s.price).toFixed(2)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>People</Label>
+                  <Input type="number" min={1} value={form.people_count}
+                    onChange={(e) => setForm({ ...form, people_count: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={form.booking_status} onValueChange={(v: any) => setForm({ ...form, booking_status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <div className="mt-3">
