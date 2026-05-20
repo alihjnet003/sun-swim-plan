@@ -1,9 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Download, Edit, Mail, MessageSquare, Printer, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Edit, Mail, MessageSquare, Plus, Printer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
-import { useBooking, useDeleteBooking } from "@/lib/queries";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import {
+  useBooking,
+  useDeleteBooking,
+  useBookingPayments,
+  useBookingAuditLog,
+  useBookingReminders,
+  useProfilesMap,
+} from "@/lib/queries";
 import { fmtDateLong, fmtMoney, slotTimeRange } from "@/lib/format";
 import { generateInvoicePDF } from "@/lib/invoice-pdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,17 +24,26 @@ function BookingDetails() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { data: b, isLoading } = useBooking(id);
+  const { data: payments = [] } = useBookingPayments(id);
+  const { data: audit = [] } = useBookingAuditLog(id);
+  const { data: reminders = [] } = useBookingReminders(id);
+  const { data: profiles } = useProfilesMap();
   const del = useDeleteBooking();
   const [editing, setEditing] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!b) return <div className="p-6">Booking not found.</div>;
+
+  const userName = (uid: string | null | undefined) =>
+    uid ? profiles?.get(uid) ?? uid.slice(0, 8) : "—";
 
   async function sendReminder(channel: "email" | "whatsapp") {
     if (!b || !b.slot) return;
     const msg = `Hello ${b.customer?.full_name ?? ""}, this is a reminder for your swimming pool booking on ${fmtDateLong(b.slot.date)} during ${slotTimeRange(b.slot.start_time, b.slot.end_time)}. Your remaining balance is ${fmtMoney(b.remaining_amount)}. Thank you.`;
     const { error } = await supabase.from("reminders").insert({ booking_id: b.id, channel, status: "sent", message_body: msg });
     if (error) { toast.error(error.message); return; }
+    await supabase.from("audit_logs").insert({ booking_id: b.id, action: `reminder_${channel}`, details: { message: msg } as any });
 
     if (channel === "whatsapp" && b.customer?.whatsapp) {
       const phone = b.customer.whatsapp.replace(/[^0-9]/g, "");
@@ -45,7 +62,7 @@ function BookingDetails() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-5xl">
       <Link to="/bookings" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4 mr-1" /> All bookings
       </Link>
@@ -84,7 +101,14 @@ function BookingDetails() {
           {b.notes && <Row label="Notes" value={b.notes} />}
         </Card>
 
-        <Card title="Payment">
+        <Card
+          title="Payment summary"
+          action={
+            <Button size="sm" variant="outline" onClick={() => setPaying(true)}>
+              <Plus className="size-4 mr-1.5" />Record payment
+            </Button>
+          }
+        >
           <Row label="Base price" value={fmtMoney(b.subtotal)} />
           <Row label="Discount" value={fmtMoney(b.discount)} />
           <Row label="Deposit" value={fmtMoney(b.deposit_amount)} />
@@ -92,21 +116,97 @@ function BookingDetails() {
           <Row label="Remaining" value={fmtMoney(b.remaining_amount)} highlight />
         </Card>
 
-        <Card title="Quick info">
+        <Card title="Activity">
           <Row label="Created" value={new Date(b.created_at).toLocaleString()} />
-          <Row label="Updated" value={new Date(b.updated_at).toLocaleString()} />
+          <Row label="Created by" value={userName(b.created_by)} />
+          <Row label="Last updated" value={new Date(b.updated_at).toLocaleString()} />
+          <Row label="Updated by" value={userName(b.updated_by)} />
         </Card>
       </div>
 
+      <Card title={`Payment history (${payments.length})`}>
+        {payments.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No payments recorded yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase text-muted-foreground">
+              <tr className="text-left">
+                <th className="py-2">Date</th>
+                <th>Method</th>
+                <th>Notes</th>
+                <th>By</th>
+                <th className="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {payments.map((p) => (
+                <tr key={p.id}>
+                  <td className="py-2">{new Date(p.payment_date).toLocaleString()}</td>
+                  <td className="capitalize">{p.payment_method.replace("_", " ")}</td>
+                  <td className="text-muted-foreground">{p.notes ?? "—"}</td>
+                  <td className="text-muted-foreground">{userName(p.created_by)}</td>
+                  <td className={`text-right tabular-nums font-medium ${Number(p.amount) < 0 ? "text-destructive" : ""}`}>
+                    {fmtMoney(p.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+
+      <Card title={`Reminders sent (${reminders.length})`}>
+        {reminders.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No reminders sent yet.</p>
+        ) : (
+          <ul className="divide-y">
+            {reminders.map((r) => (
+              <li key={r.id} className="py-3 flex items-start gap-3">
+                {r.channel === "whatsapp" ? <MessageSquare className="size-4 mt-0.5 text-muted-foreground" /> : <Mail className="size-4 mt-0.5 text-muted-foreground" />}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium capitalize">{r.channel}</span>
+                    <span className="text-muted-foreground text-xs">{new Date(r.sent_at).toLocaleString()} · by {userName(r.created_by)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{r.message_body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      <Card title={`Audit log (${audit.length})`}>
+        {audit.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No activity recorded.</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {audit.map((a) => (
+              <li key={a.id} className="flex justify-between gap-3 border-l-2 border-primary/40 pl-3">
+                <div>
+                  <div className="font-medium capitalize">{a.action.replace(/_/g, " ")}</div>
+                  <div className="text-xs text-muted-foreground">by {userName(a.created_by)}</div>
+                </div>
+                <div className="text-xs text-muted-foreground whitespace-nowrap">{new Date(a.created_at).toLocaleString()}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       <BookingModal open={editing} onOpenChange={setEditing} booking={b} />
+      <PaymentDialog open={paying} onOpenChange={setPaying} booking={b} />
     </div>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <section className="rounded-xl border bg-card">
-      <header className="px-5 py-3 border-b font-semibold text-sm">{title}</header>
+      <header className="px-5 py-3 border-b font-semibold text-sm flex items-center justify-between">
+        <span>{title}</span>
+        {action}
+      </header>
       <div className="p-5 space-y-2 text-sm">{children}</div>
     </section>
   );
