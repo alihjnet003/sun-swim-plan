@@ -161,6 +161,9 @@ export function useInvalidateAll() {
     qc.invalidateQueries({ queryKey: ["slots"] });
     qc.invalidateQueries({ queryKey: ["customers"] });
     qc.invalidateQueries({ queryKey: ["booking"] });
+    qc.invalidateQueries({ queryKey: ["payments"] });
+    qc.invalidateQueries({ queryKey: ["audit"] });
+    qc.invalidateQueries({ queryKey: ["reminders"] });
   };
 }
 
