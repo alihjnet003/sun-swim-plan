@@ -177,3 +177,20 @@ export function useDeleteBooking() {
     onSuccess: invalidate,
   });
 }
+
+// Slots not booked yet (optionally include the currently-selected slot id).
+export function useAvailableSlots(includeSlotId?: string) {
+  return useQuery({
+    queryKey: ["slots", "available", includeSlotId ?? ""],
+    queryFn: async () => {
+      const [{ data: slots, error: se }, { data: booked, error: be }] = await Promise.all([
+        supabase.from("booking_slots").select("*").eq("is_closed", false).order("date").order("start_time"),
+        supabase.from("bookings").select("slot_id"),
+      ]);
+      if (se) throw se;
+      if (be) throw be;
+      const takenIds = new Set((booked ?? []).map((b) => b.slot_id));
+      return (slots ?? []).filter((s) => !takenIds.has(s.id) || s.id === includeSlotId);
+    },
+  });
+}
