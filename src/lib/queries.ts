@@ -5,6 +5,9 @@ import type { Database } from "@/integrations/supabase/types";
 export type Customer = Database["public"]["Tables"]["customers"]["Row"];
 export type Slot = Database["public"]["Tables"]["booking_slots"]["Row"];
 export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
+export type Payment = Database["public"]["Tables"]["payments"]["Row"];
+export type AuditLog = Database["public"]["Tables"]["audit_logs"]["Row"];
+export type Reminder = Database["public"]["Tables"]["reminders"]["Row"];
 
 export type BookingWithRelations = Booking & {
   customer: Customer | null;
@@ -12,6 +15,67 @@ export type BookingWithRelations = Booking & {
 };
 
 const SELECT_BOOKING = "*, customer:customers(*), slot:booking_slots(*)";
+
+export function useProfilesMap() {
+  return useQuery({
+    queryKey: ["profiles", "map"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, full_name");
+      if (error) throw error;
+      const map = new Map<string, string>();
+      (data ?? []).forEach((p) => map.set(p.id, p.full_name ?? "Unknown user"));
+      return map;
+    },
+  });
+}
+
+export function useBookingPayments(bookingId: string | undefined) {
+  return useQuery({
+    queryKey: ["payments", bookingId],
+    enabled: !!bookingId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("booking_id", bookingId!)
+        .order("payment_date", { ascending: false });
+      if (error) throw error;
+      return data as Payment[];
+    },
+  });
+}
+
+export function useBookingAuditLog(bookingId: string | undefined) {
+  return useQuery({
+    queryKey: ["audit", bookingId],
+    enabled: !!bookingId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .eq("booking_id", bookingId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as AuditLog[];
+    },
+  });
+}
+
+export function useBookingReminders(bookingId: string | undefined) {
+  return useQuery({
+    queryKey: ["reminders", bookingId],
+    enabled: !!bookingId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reminders")
+        .select("*")
+        .eq("booking_id", bookingId!)
+        .order("sent_at", { ascending: false });
+      if (error) throw error;
+      return data as Reminder[];
+    },
+  });
+}
 
 export function useCustomers() {
   return useQuery({
