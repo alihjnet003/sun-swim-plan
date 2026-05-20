@@ -19,6 +19,7 @@ export type Database = {
           action: string
           booking_id: string | null
           created_at: string
+          created_by: string | null
           details: Json | null
           id: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           action: string
           booking_id?: string | null
           created_at?: string
+          created_by?: string | null
           details?: Json | null
           id?: string
         }
@@ -33,6 +35,7 @@ export type Database = {
           action?: string
           booking_id?: string | null
           created_at?: string
+          created_by?: string | null
           details?: Json | null
           id?: string
         }
@@ -117,6 +120,7 @@ export type Database = {
           booking_number: string
           booking_status: Database["public"]["Enums"]["booking_status"]
           created_at: string
+          created_by: string | null
           customer_id: string
           deposit_amount: number
           discount: number
@@ -129,11 +133,13 @@ export type Database = {
           slot_id: string
           subtotal: number
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           booking_number: string
           booking_status?: Database["public"]["Enums"]["booking_status"]
           created_at?: string
+          created_by?: string | null
           customer_id: string
           deposit_amount?: number
           discount?: number
@@ -146,11 +152,13 @@ export type Database = {
           slot_id: string
           subtotal?: number
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           booking_number?: string
           booking_status?: Database["public"]["Enums"]["booking_status"]
           created_at?: string
+          created_by?: string | null
           customer_id?: string
           deposit_amount?: number
           discount?: number
@@ -163,6 +171,7 @@ export type Database = {
           slot_id?: string
           subtotal?: number
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -215,6 +224,7 @@ export type Database = {
         Row: {
           amount: number
           booking_id: string
+          created_by: string | null
           id: string
           notes: string | null
           payment_date: string
@@ -223,6 +233,7 @@ export type Database = {
         Insert: {
           amount: number
           booking_id: string
+          created_by?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -231,6 +242,7 @@ export type Database = {
         Update: {
           amount?: number
           booking_id?: string
+          created_by?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -271,6 +283,7 @@ export type Database = {
         Row: {
           booking_id: string
           channel: Database["public"]["Enums"]["reminder_channel"]
+          created_by: string | null
           id: string
           message_body: string
           sent_at: string
@@ -279,6 +292,7 @@ export type Database = {
         Insert: {
           booking_id: string
           channel: Database["public"]["Enums"]["reminder_channel"]
+          created_by?: string | null
           id?: string
           message_body: string
           sent_at?: string
@@ -287,6 +301,7 @@ export type Database = {
         Update: {
           booking_id?: string
           channel?: Database["public"]["Enums"]["reminder_channel"]
+          created_by?: string | null
           id?: string
           message_body?: string
           sent_at?: string

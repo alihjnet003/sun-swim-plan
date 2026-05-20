@@ -117,9 +117,19 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
       };
 
       if (booking) {
+        const prevPaid = Number(booking.paid_amount);
         const { error } = await supabase.from("bookings").update(payload).eq("id", booking.id);
         if (error) throw error;
         await supabase.from("audit_logs").insert({ booking_id: booking.id, action: "updated", details: payload as any });
+        if (form.paid_amount !== prevPaid) {
+          const delta = form.paid_amount - prevPaid;
+          await supabase.from("payments").insert({
+            booking_id: booking.id,
+            amount: delta,
+            payment_method: "adjustment",
+            notes: `Paid amount changed from ${prevPaid.toFixed(2)} to ${form.paid_amount.toFixed(2)}`,
+          });
+        }
         toast.success("Booking updated");
       } else {
         const { data, error } = await supabase
@@ -134,6 +144,14 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
           return;
         }
         await supabase.from("audit_logs").insert({ booking_id: data.id, action: "created", details: payload as any });
+        if (form.paid_amount > 0) {
+          await supabase.from("payments").insert({
+            booking_id: data.id,
+            amount: form.paid_amount,
+            payment_method: "cash",
+            notes: "Initial payment",
+          });
+        }
         toast.success("Booking created");
       }
       invalidate();
