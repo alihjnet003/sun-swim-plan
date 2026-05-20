@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
+import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
 import { computePaymentStatus, fmtDate, generateBookingNumber, slotTimeRange } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
