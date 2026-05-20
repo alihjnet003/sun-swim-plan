@@ -232,23 +232,41 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
           {/* Booking */}
           <section>
             <h3 className="text-sm font-semibold mb-2">Booking</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
-                <Label>People</Label>
-                <Input type="number" min={1} value={form.people_count}
-                  onChange={(e) => setForm({ ...form, people_count: Number(e.target.value) })} />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select value={form.booking_status} onValueChange={(v: any) => setForm({ ...form, booking_status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Label>Slot (date &amp; time)</Label>
+                <Select value={form.slot_id} onValueChange={(v) => {
+                  const s = availableSlots.find((x) => x.id === v);
+                  setForm((f) => ({ ...f, slot_id: v, subtotal: s ? Number(s.price) : f.subtotal }));
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Choose a slot" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    {availableSlots.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {fmtDate(s.date)} · {slotTimeRange(s.start_time, s.end_time)} · ${Number(s.price).toFixed(2)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>People</Label>
+                  <Input type="number" min={1} value={form.people_count}
+                    onChange={(e) => setForm({ ...form, people_count: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={form.booking_status} onValueChange={(v: any) => setForm({ ...form, booking_status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <div className="mt-3">
