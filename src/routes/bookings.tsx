@@ -73,11 +73,12 @@ function BookingsList() {
                 <th className="text-right px-4 py-3">Remaining</th>
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Payment</th>
+                <th className="text-left px-4 py-3">Created by</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {isLoading && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Loading…</td></tr>}
-              {!isLoading && filtered.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No bookings match your filters.</td></tr>}
+              {isLoading && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Loading…</td></tr>}
+              {!isLoading && filtered.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No bookings match your filters.</td></tr>}
               {filtered.map((b) => (
                 <tr key={b.id} className="hover:bg-accent/30">
                   <td className="px-4 py-3">
@@ -97,6 +98,9 @@ function BookingsList() {
                   <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(b.remaining_amount)}</td>
                   <td className="px-4 py-3"><BookingStatusBadge status={b.booking_status} /></td>
                   <td className="px-4 py-3"><PaymentStatusBadge status={b.payment_status} /></td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {b.created_by ? profiles?.get(b.created_by) ?? "—" : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>
