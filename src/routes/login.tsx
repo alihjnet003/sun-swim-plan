@@ -59,9 +59,6 @@ function LoginPage() {
               <Button type="submit" disabled={busy} className="w-full">
                 {busy && <Loader2 className="size-4 animate-spin mr-2" />}Sign in
               </Button>
-              <p className="text-xs text-muted-foreground pt-2">
-                Accounts are created by an administrator. Contact your admin if you need access.
-              </p>
             </form>
           </CardContent>
         </Card>
