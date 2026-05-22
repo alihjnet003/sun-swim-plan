@@ -243,7 +243,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                   <SelectContent>
                     {availableSlots.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {fmtDate(s.date)} · {slotTimeRange(s.start_time, s.end_time)} · ${Number(s.price).toFixed(2)}
+                        {fmtDate(s.date)} · {slotTimeRange(s.start_time, s.end_time)} · {fmtMoney(s.price)}
                       </SelectItem>
                     ))}
                   </SelectContent>
