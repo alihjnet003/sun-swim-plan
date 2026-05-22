@@ -1,17 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { runDailyBackup } from "@/lib/backup.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-// Cron-triggered daily backup. Public path; secured by the apikey header
-// that pg_cron attaches (Supabase publishable key).
+// Cron-triggered daily backup. Authenticated via a server-only shared secret
+// (BACKUP_WEBHOOK_SECRET) — never the publishable/anon key, which is public.
 export const Route = createFileRoute("/api/public/hooks/daily-backup")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey");
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY;
-        if (!expected || apikey !== expected) {
+        const provided = request.headers.get("x-backup-secret") ?? request.headers.get("apikey");
+        const expected = process.env.BACKUP_WEBHOOK_SECRET;
+        if (!expected || !provided || provided !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
+
+        // Rate-limit: refuse if a successful backup ran within the last hour.
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { data: recent } = await supabaseAdmin
+          .from("backups")
+          .select("id")
+          .eq("status", "success")
+          .gte("created_at", oneHourAgo)
+          .limit(1);
+        if (recent && recent.length > 0) {
+          return new Response(
+            JSON.stringify({ ok: false, error: "A backup already ran within the last hour." }),
+            { status: 429, headers: { "content-type": "application/json" } },
+          );
+        }
+
         try {
           const result = await runDailyBackup();
           return new Response(JSON.stringify({ ok: true, ...result }), {
