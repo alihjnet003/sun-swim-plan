@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
-import { computePaymentStatus, fmtDate, generateBookingNumber, slotTimeRange } from "@/lib/format";
+import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -243,7 +243,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                   <SelectContent>
                     {availableSlots.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {fmtDate(s.date)} · {slotTimeRange(s.start_time, s.end_time)} · ${Number(s.price).toFixed(2)}
+                        {fmtDate(s.date)} · {slotTimeRange(s.start_time, s.end_time)} · {fmtMoney(s.price)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -303,11 +303,11 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div className="rounded-md bg-muted p-3">
                 <div className="text-muted-foreground text-xs">Total</div>
-                <div className="font-semibold">${total.toFixed(2)}</div>
+                <div className="font-semibold">{fmtMoney(total)}</div>
               </div>
               <div className="rounded-md bg-muted p-3">
                 <div className="text-muted-foreground text-xs">Remaining</div>
-                <div className="font-semibold">${remaining.toFixed(2)}</div>
+                <div className="font-semibold">{fmtMoney(remaining)}</div>
               </div>
               <div className="rounded-md bg-muted p-3">
                 <div className="text-muted-foreground text-xs">Payment status</div>
