@@ -1,16 +1,25 @@
 export const fmtMoney = (n: number | string | null | undefined) => {
   const v = typeof n === "string" ? parseFloat(n) : n ?? 0;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v || 0);
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "ar" ? "ar-BH" : "en-BH";
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "BHD",
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  }).format(v || 0);
 };
 
-export const fmtDate = (d: string | Date) =>
-  new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+export const fmtDate = (d: string | Date) => {
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "ar" ? "ar-BH" : "en-US";
+  return new Date(d).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
+};
 
-export const fmtDateLong = (d: string | Date) =>
-  new Date(d).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+export const fmtDateLong = (d: string | Date) => {
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "ar" ? "ar-BH" : "en-US";
+  return new Date(d).toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+};
 
 export const fmtTime = (t: string) => {
-  // "HH:MM:SS" -> "9:00 AM"
   const [h, m] = t.split(":").map(Number);
   const period = h >= 12 ? "PM" : "AM";
   const hh = ((h + 11) % 12) + 1;
