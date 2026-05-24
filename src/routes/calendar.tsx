@@ -53,21 +53,21 @@ function CalendarPage() {
   const todayKey = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="space-y-4 w-full overflow-x-hidden">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Monthly Calendar</h1>
-          <p className="text-muted-foreground text-sm">Click a slot to view or create a booking</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Monthly Calendar</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Click a slot to view or create a booking</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 mx-auto sm:mx-0">
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><ChevronLeft className="size-4" /></Button>
-          <div className="font-semibold w-44 text-center">{cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+          <div className="font-semibold w-32 sm:w-44 text-center text-sm sm:text-base">{cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m + 1, 1))}><ChevronRight className="size-4" /></Button>
-          <Button variant="outline" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>Today</Button>
+          <Button variant="outline" size="sm" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>Today</Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
         <Legend color="bg-success/30 border-success/40" label="Available" />
         <Legend color="bg-warning/30 border-warning/40" label="Pending" />
         <Legend color="bg-destructive/20 border-destructive/40" label="Booked" />
@@ -75,10 +75,10 @@ function CalendarPage() {
         <Legend color="bg-muted border-border" label="Cancelled" />
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="grid grid-cols-7 text-xs font-medium border-b bg-muted/50">
+      <div className="rounded-xl border bg-card overflow-hidden w-full">
+        <div className="grid grid-cols-7 text-[10px] sm:text-xs font-medium border-b bg-muted/50">
           {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
-            <div key={d} className="px-2 py-2 text-center">{d}</div>
+            <div key={d} className="px-1 py-2 text-center min-w-0 truncate"><span className="sm:hidden">{d[0]}</span><span className="hidden sm:inline">{d}</span></div>
           ))}
         </div>
         <div className="grid grid-cols-7 auto-rows-fr">
@@ -87,15 +87,39 @@ function CalendarPage() {
             const daySlots = key ? slotsByDate.get(key) ?? [] : [];
             const isToday = key === todayKey;
             return (
-              <div key={i} className={cn("min-h-[120px] border-r border-b p-1.5 text-xs", !c.date && "bg-muted/20")}>
+              <div key={i} className={cn("min-h-[60px] sm:min-h-[120px] min-w-0 overflow-hidden border-r border-b p-1 sm:p-1.5 text-[10px] sm:text-xs", !c.date && "bg-muted/20")}>
                 {c.date && (
                   <>
                     <div className={cn("flex justify-end mb-1 font-medium", isToday && "text-primary")}>
-                      <span className={cn("inline-flex size-6 items-center justify-center rounded-full", isToday && "bg-primary text-primary-foreground")}>
+                      <span className={cn("inline-flex size-5 sm:size-6 items-center justify-center rounded-full text-[10px] sm:text-xs", isToday && "bg-primary text-primary-foreground")}>
                         {c.date.getDate()}
                       </span>
                     </div>
-                    <div className="space-y-1">
+                    {/* Mobile: compact dot indicators. Desktop: full slot buttons. */}
+                    <div className="sm:hidden flex flex-wrap gap-0.5 justify-center">
+                      {daySlots.slice(0, 6).map((s) => {
+                        const b = bookingBySlot.get(s.id);
+                        const status = s.is_closed ? "cancelled" : b ? b.booking_status : "available";
+                        const dotClass = status === "available" ? "bg-success"
+                          : status === "new" ? "bg-warning"
+                          : status === "confirmed" ? "bg-destructive"
+                          : status === "completed" ? "bg-info"
+                          : "bg-muted-foreground";
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              if (b) { setSelectedBooking(b); setSelectedSlot(null); }
+                              else { setSelectedSlot(s); setSelectedBooking(null); }
+                              setModalOpen(true);
+                            }}
+                            className={cn("size-1.5 rounded-full", dotClass)}
+                            aria-label={slotTimeRange(s.start_time, s.end_time)}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="hidden sm:block space-y-1">
                       {daySlots.map((s) => {
                         const b = bookingBySlot.get(s.id);
                         const status = s.is_closed ? "cancelled" : b ? (b.booking_status === "new" ? "new" : b.booking_status) : "available";
@@ -118,7 +142,7 @@ function CalendarPage() {
                             {b ? (
                               <div className="truncate opacity-90">{b.customer?.full_name}</div>
                             ) : (
-                              <div className="opacity-75">{s.label ?? "Available"} · {fmtMoney(s.price)}</div>
+                              <div className="opacity-75 truncate">{s.label ?? "Available"} · {fmtMoney(s.price)}</div>
                             )}
                           </button>
                         );
