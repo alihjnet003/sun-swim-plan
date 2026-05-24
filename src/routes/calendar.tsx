@@ -53,21 +53,21 @@ function CalendarPage() {
   const todayKey = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="space-y-4 w-full overflow-x-hidden">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Monthly Calendar</h1>
-          <p className="text-muted-foreground text-sm">Click a slot to view or create a booking</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Monthly Calendar</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Click a slot to view or create a booking</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 mx-auto sm:mx-0">
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><ChevronLeft className="size-4" /></Button>
-          <div className="font-semibold w-44 text-center">{cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+          <div className="font-semibold w-32 sm:w-44 text-center text-sm sm:text-base">{cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m + 1, 1))}><ChevronRight className="size-4" /></Button>
-          <Button variant="outline" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>Today</Button>
+          <Button variant="outline" size="sm" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>Today</Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
         <Legend color="bg-success/30 border-success/40" label="Available" />
         <Legend color="bg-warning/30 border-warning/40" label="Pending" />
         <Legend color="bg-destructive/20 border-destructive/40" label="Booked" />
