@@ -78,7 +78,7 @@ function CalendarPage() {
       <div className="rounded-xl border bg-card overflow-hidden w-full">
         <div className="grid grid-cols-7 text-[10px] sm:text-xs font-medium border-b bg-muted/50">
           {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
-            <div key={d} className="px-1 py-2 text-center min-w-0 truncate">{d.slice(0, window.innerWidth < 640 ? 1 : 3)}</div>
+            <div key={d} className="px-1 py-2 text-center min-w-0 truncate"><span className="sm:hidden">{d[0]}</span><span className="hidden sm:inline">{d}</span></div>
           ))}
         </div>
         <div className="grid grid-cols-7 auto-rows-fr">
