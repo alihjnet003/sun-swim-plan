@@ -84,7 +84,7 @@ function CalendarPage() {
         </div>
         <div className="grid grid-cols-7 auto-rows-fr">
           {days.map((c, i) => {
-            const key = c.date?.toISOString().slice(0, 10);
+            const key = c.date ? toLocalKey(c.date) : undefined;
             const daySlots = key ? slotsByDate.get(key) ?? [] : [];
             const isToday = key === todayKey;
             return (
