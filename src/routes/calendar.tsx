@@ -50,7 +50,8 @@ function CalendarPage() {
     return map;
   }, [slots]);
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const toLocalKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const todayKey = toLocalKey(new Date());
 
   return (
     <div className="space-y-4 w-full overflow-x-hidden">
@@ -83,7 +84,7 @@ function CalendarPage() {
         </div>
         <div className="grid grid-cols-7 auto-rows-fr">
           {days.map((c, i) => {
-            const key = c.date?.toISOString().slice(0, 10);
+            const key = c.date ? toLocalKey(c.date) : undefined;
             const daySlots = key ? slotsByDate.get(key) ?? [] : [];
             const isToday = key === todayKey;
             return (
