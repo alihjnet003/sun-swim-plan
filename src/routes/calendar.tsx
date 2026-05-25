@@ -39,7 +39,7 @@ function CalendarPage() {
   const m = cursor.getMonth();
   const { data: slots = [] } = useSlotsForMonth(y, m);
   const { data: bookings = [] } = useBookingsForMonth(y, m);
-  const isMobile = useIsMobile();
+
 
   const thisYearHolidays = usePublicHolidays(y);
   const nextYearHolidays = usePublicHolidays(y + 1);
