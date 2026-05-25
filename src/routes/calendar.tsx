@@ -6,7 +6,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { BookingModal } from "@/components/BookingModal";
 import { useBookingsForMonth, useSlotsForMonth, type BookingWithRelations, type Slot } from "@/lib/queries";
 import { usePublicHolidays } from "@/hooks/usePublicHolidays";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { fmtMoney, slotTimeRange } from "@/lib/format";
 
