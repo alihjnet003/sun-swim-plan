@@ -6,7 +6,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { BookingModal } from "@/components/BookingModal";
 import { useBookingsForMonth, useSlotsForMonth, type BookingWithRelations, type Slot } from "@/lib/queries";
 import { usePublicHolidays } from "@/hooks/usePublicHolidays";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { fmtMoney, slotTimeRange } from "@/lib/format";
 
@@ -40,7 +39,7 @@ function CalendarPage() {
   const m = cursor.getMonth();
   const { data: slots = [] } = useSlotsForMonth(y, m);
   const { data: bookings = [] } = useBookingsForMonth(y, m);
-  const isMobile = useIsMobile();
+
 
   const thisYearHolidays = usePublicHolidays(y);
   const nextYearHolidays = usePublicHolidays(y + 1);
@@ -137,48 +136,29 @@ function CalendarPage() {
               return <div key={i} className="min-h-[52px] sm:min-h-[120px] border-r border-b bg-muted/20" />;
             }
 
-            if (isMobile) {
-              return (
-                <div
-                  key={i}
-                  onClick={() => { setSelectedDayKey(key!); setSheetOpen(true); }}
-                  className="min-h-[52px] p-1 border-r border-b border-border relative cursor-pointer active:bg-muted/40 select-none"
-                >
-                  <div className={cn("text-[11px] font-medium text-right", isToday && "text-primary")}>
-                    <span className={cn("inline-flex size-5 items-center justify-center rounded-full", isToday && "bg-primary text-primary-foreground")}>
-                      {c.date.getDate()}
-                    </span>
-                  </div>
-                  {holiday && (
-                    <span className="absolute top-1 left-1 size-1.5 rounded-full bg-amber-500" aria-label={holiday.localName || holiday.name} />
-                  )}
-                  <div className="absolute bottom-1 left-0 right-0 flex items-center justify-center gap-0.5">
-                    {daySlots.slice(0, 4).map((s) => {
-                      const b = bookingBySlot.get(s.id);
-                      const status = s.is_closed ? "cancelled" : b ? b.booking_status : "available";
-                      return <span key={s.id} className={cn("size-1.5 rounded-full", dotColor(status))} />;
-                    })}
-                    {daySlots.length > 4 && (
-                      <span className="text-[8px] text-muted-foreground leading-none ml-0.5">+{daySlots.length - 4}</span>
-                    )}
-                  </div>
-                </div>
-              );
-            }
-
             return (
-              <div key={i} className="min-h-[120px] min-w-0 overflow-hidden border-r border-b p-1.5 text-xs">
+              <div
+                key={i}
+                onClick={() => { setSelectedDayKey(key!); setSheetOpen(true); }}
+                className="min-h-[52px] md:min-h-[120px] min-w-0 overflow-hidden border-r border-b p-1 md:p-1.5 text-xs relative cursor-pointer active:bg-muted/40 md:active:bg-transparent md:cursor-default select-none"
+              >
                 <div className={cn("flex items-center justify-between mb-1 font-medium gap-1", isToday && "text-primary")}>
                   {holiday ? (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 truncate" title={holiday.localName || holiday.name}>
+                    <span className="hidden md:inline text-[10px] text-amber-600 dark:text-amber-400 truncate" title={holiday.localName || holiday.name}>
                       {holiday.localName || holiday.name}
                     </span>
-                  ) : <span />}
-                  <span className={cn("inline-flex size-6 items-center justify-center rounded-full text-xs", isToday && "bg-primary text-primary-foreground")}>
+                  ) : <span className="hidden md:inline" />}
+                  <span className={cn("inline-flex size-5 md:size-6 items-center justify-center rounded-full text-[11px] md:text-xs ml-auto", isToday && "bg-primary text-primary-foreground")}>
                     {c.date.getDate()}
                   </span>
                 </div>
-                <div className="space-y-1">
+
+                {holiday && (
+                  <span className="md:hidden absolute top-1 left-1 size-1.5 rounded-full bg-amber-500" aria-label={holiday.localName || holiday.name} />
+                )}
+
+                {/* Desktop: full slot cards */}
+                <div className="hidden md:block space-y-1">
                   {daySlots.map((s) => {
                     const b = bookingBySlot.get(s.id);
                     const status = s.is_closed ? "cancelled" : b ? b.booking_status : "available";
@@ -188,7 +168,7 @@ function CalendarPage() {
                     return (
                       <button
                         key={s.id}
-                        onClick={() => openSlot(s)}
+                        onClick={(e) => { e.stopPropagation(); openSlot(s); }}
                         className={cn("w-full text-left border rounded px-1.5 py-1 transition-colors", klass)}
                       >
                         <div className="font-medium truncate">
@@ -202,6 +182,18 @@ function CalendarPage() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Mobile: dots only */}
+                <div className="md:hidden absolute bottom-1 left-0 right-0 flex items-center justify-center gap-0.5">
+                  {daySlots.slice(0, 4).map((s) => {
+                    const b = bookingBySlot.get(s.id);
+                    const status = s.is_closed ? "cancelled" : b ? b.booking_status : "available";
+                    return <span key={s.id} className={cn("size-1.5 rounded-full", dotColor(status))} />;
+                  })}
+                  {daySlots.length > 4 && (
+                    <span className="text-[8px] text-muted-foreground leading-none ml-0.5">+{daySlots.length - 4}</span>
+                  )}
                 </div>
               </div>
             );
