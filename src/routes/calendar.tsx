@@ -1,13 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Dialog, DialogContent, DialogHeader,
+  DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { BookingModal } from "@/components/BookingModal";
-import { useBookingsForMonth, useSlotsForMonth, type BookingWithRelations, type Slot } from "@/lib/queries";
+import {
+  useBookingsForMonth, useSlotsForMonth,
+  type BookingWithRelations, type Slot,
+  useInvalidateAll,
+} from "@/lib/queries";
 import { usePublicHolidays } from "@/hooks/usePublicHolidays";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { fmtMoney, slotTimeRange } from "@/lib/format";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/calendar")({ component: CalendarPage });
 
@@ -20,17 +37,20 @@ const statusColor: Record<string, string> = {
 
 function dotColor(status: string) {
   switch (status) {
-    case "available":
-      return "bg-success";
-    case "new":
-      return "bg-warning";
-    case "confirmed":
-      return "bg-destructive";
-    case "completed":
-      return "bg-info";
-    default:
-      return "bg-muted-foreground";
+    case "available": return "bg-success";
+    case "new":       return "bg-warning";
+    case "confirmed": return "bg-destructive";
+    case "completed": return "bg-info";
+    default:          return "bg-muted-foreground";
   }
+}
+
+interface EditForm {
+  date: string;
+  start_time: string;
+  end_time: string;
+  label: string;
+  price: string;
 }
 
 function CalendarPage() {
@@ -39,18 +59,29 @@ function CalendarPage() {
   const m = cursor.getMonth();
   const { data: slots = [] } = useSlotsForMonth(y, m);
   const { data: bookings = [] } = useBookingsForMonth(y, m);
-
+  const invalidate = useInvalidateAll();
 
   const thisYearHolidays = usePublicHolidays(y);
   const nextYearHolidays = usePublicHolidays(y + 1);
   const holidays = useMemo(() => ({ ...thisYearHolidays, ...nextYearHolidays }), [thisYearHolidays, nextYearHolidays]);
 
+  // Booking modal
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<BookingWithRelations | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Mobile bottom sheet
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+
+  // Edit slot dialog
+  const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ date: "", start_time: "", end_time: "", label: "", price: "" });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Delete slot dialog
+  const [deletingSlot, setDeletingSlot] = useState<Slot | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const bookingBySlot = useMemo(() => {
     const map = new Map<string, BookingWithRelations>();
@@ -75,7 +106,8 @@ function CalendarPage() {
     return map;
   }, [slots]);
 
-  const toLocalKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const toLocalKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const todayKey = toLocalKey(new Date());
 
   const selectedDaySlots = selectedDayKey ? slotsByDate.get(selectedDayKey) ?? [] : [];
@@ -84,6 +116,7 @@ function CalendarPage() {
     ? new Date(selectedDayKey + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
     : "";
 
+  // Open booking modal
   const openSlot = (s: Slot) => {
     const b = bookingBySlot.get(s.id);
     if (b) { setSelectedBooking(b); setSelectedSlot(null); }
@@ -92,8 +125,85 @@ function CalendarPage() {
     setSheetOpen(false);
   };
 
+  // Open edit dialog
+  const openEditSlot = (s: Slot) => {
+    setEditingSlot(s);
+    setEditForm({
+      date:       s.date,
+      start_time: s.start_time,
+      end_time:   s.end_time,
+      label:      s.label ?? "",
+      price:      String(s.price),
+    });
+    setSheetOpen(false);
+  };
+
+  // Save edit
+  const handleSaveEdit = async () => {
+    if (!editingSlot) return;
+    const price = parseFloat(editForm.price);
+    if (!editForm.date || !editForm.start_time || !editForm.end_time) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    if (isNaN(price) || price < 0) {
+      toast.error("Please enter a valid price");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("booking_slots")
+        .update({
+          date:       editForm.date,
+          start_time: editForm.start_time,
+          end_time:   editForm.end_time,
+          label:      editForm.label || null,
+          price,
+        })
+        .eq("id", editingSlot.id);
+      if (error) throw error;
+      toast.success("Slot updated ✓");
+      setEditingSlot(null);
+      invalidate();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to update slot");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Open delete confirm
+  const openDeleteConfirm = (s: Slot) => {
+    setDeletingSlot(s);
+    setSheetOpen(false);
+  };
+
+  // Confirm delete
+  const handleDeleteSlot = async () => {
+    if (!deletingSlot) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("booking_slots")
+        .delete()
+        .eq("id", deletingSlot.id);
+      if (error) throw error;
+      toast.success("Slot deleted");
+      setDeletingSlot(null);
+      invalidate();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to delete slot");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isOvernight = editForm.start_time && editForm.end_time && editForm.end_time <= editForm.start_time;
+
   return (
     <div className="space-y-4 w-full overflow-x-hidden">
+      {/* Header */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Monthly Calendar</h1>
@@ -101,12 +211,15 @@ function CalendarPage() {
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 mx-auto sm:mx-0">
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><ChevronLeft className="size-4" /></Button>
-          <div className="font-semibold w-32 sm:w-44 text-center text-sm sm:text-base">{cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+          <div className="font-semibold w-32 sm:w-44 text-center text-sm sm:text-base">
+            {cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          </div>
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m + 1, 1))}><ChevronRight className="size-4" /></Button>
           <Button variant="outline" size="sm" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>Today</Button>
         </div>
       </div>
 
+      {/* Legend */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
         <Legend color="bg-success/30 border-success/40" label="Available" />
         <Legend color="bg-warning/30 border-warning/40" label="Pending" />
@@ -116,7 +229,9 @@ function CalendarPage() {
         <Legend color="bg-amber-500 border-amber-500" label="Holiday" />
       </div>
 
+      {/* Calendar grid */}
       <div className="rounded-xl border bg-card overflow-hidden w-full">
+        {/* Weekday headers */}
         <div className="grid grid-cols-7 text-[10px] sm:text-xs font-medium border-b bg-muted/50">
           {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
             <div key={d} className="px-1 py-2 text-center min-w-0 truncate">
@@ -125,6 +240,8 @@ function CalendarPage() {
             </div>
           ))}
         </div>
+
+        {/* Day cells */}
         <div className="grid grid-cols-7 auto-rows-fr">
           {days.map((c, i) => {
             const key = c.date ? toLocalKey(c.date) : undefined;
@@ -142,6 +259,7 @@ function CalendarPage() {
                 onClick={() => { setSelectedDayKey(key!); setSheetOpen(true); }}
                 className="min-h-[52px] md:min-h-[120px] min-w-0 overflow-hidden border-r border-b p-1 md:p-1.5 text-xs relative cursor-pointer active:bg-muted/40 md:active:bg-transparent md:cursor-default select-none"
               >
+                {/* Day number row */}
                 <div className={cn("flex items-center justify-between mb-1 font-medium gap-1", isToday && "text-primary")}>
                   {holiday ? (
                     <span className="hidden md:inline text-[10px] text-amber-600 dark:text-amber-400 truncate" title={holiday.localName || holiday.name}>
@@ -153,11 +271,12 @@ function CalendarPage() {
                   </span>
                 </div>
 
+                {/* Holiday dot (mobile) */}
                 {holiday && (
                   <span className="md:hidden absolute top-1 left-1 size-1.5 rounded-full bg-amber-500" aria-label={holiday.localName || holiday.name} />
                 )}
 
-                {/* Desktop: full slot cards */}
+                {/* Desktop: full slot cards with edit/delete buttons */}
                 <div className="hidden md:block space-y-1">
                   {daySlots.map((s) => {
                     const b = bookingBySlot.get(s.id);
@@ -166,20 +285,38 @@ function CalendarPage() {
                       ? "bg-success/15 text-success border-success/30 hover:bg-success/25"
                       : statusColor[status];
                     return (
-                      <button
-                        key={s.id}
-                        onClick={(e) => { e.stopPropagation(); openSlot(s); }}
-                        className={cn("w-full text-left border rounded px-1.5 py-1 transition-colors", klass)}
-                      >
-                        <div className="font-medium truncate">
-                          {slotTimeRange(s.start_time, s.end_time)}
+                      <div key={s.id} className="relative group">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openSlot(s); }}
+                          className={cn("w-full text-left border rounded px-1.5 py-1 transition-colors pr-12", klass)}
+                        >
+                          <div className="font-medium truncate">
+                            {slotTimeRange(s.start_time, s.end_time)}
+                          </div>
+                          {b ? (
+                            <div className="truncate opacity-90">{b.customer?.full_name}</div>
+                          ) : (
+                            <div className="opacity-75 truncate">{s.label ?? "Available"} · {fmtMoney(s.price)}</div>
+                          )}
+                        </button>
+                        {/* Edit / Delete buttons — appear on hover */}
+                        <div className="absolute top-0.5 right-0.5 hidden group-hover:flex gap-0.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEditSlot(s); }}
+                            title="Edit slot"
+                            className="p-1 rounded bg-background/90 hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border"
+                          >
+                            <Pencil className="size-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openDeleteConfirm(s); }}
+                            title="Delete slot"
+                            className="p-1 rounded bg-background/90 hover:bg-destructive/20 text-muted-foreground hover:text-destructive border border-border"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
                         </div>
-                        {b ? (
-                          <div className="truncate opacity-90">{b.customer?.full_name}</div>
-                        ) : (
-                          <div className="opacity-75 truncate">{s.label ?? "Available"} · {fmtMoney(s.price)}</div>
-                        )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -201,6 +338,7 @@ function CalendarPage() {
         </div>
       </div>
 
+      {/* Booking modal */}
       <BookingModal
         open={modalOpen}
         onOpenChange={setModalOpen}
@@ -208,13 +346,14 @@ function CalendarPage() {
         booking={selectedBooking}
       />
 
+      {/* Mobile bottom sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto rounded-t-2xl pb-10">
           <SheetHeader>
             <SheetTitle>{selectedDayLabel}</SheetTitle>
             {selectedDayHoliday && (
               <div className="text-xs text-amber-600 dark:text-amber-400">
-                {selectedDayHoliday.localName || selectedDayHoliday.name}
+                🎉 {selectedDayHoliday.localName || selectedDayHoliday.name}
               </div>
             )}
           </SheetHeader>
@@ -229,15 +368,13 @@ function CalendarPage() {
                   const b = bookingBySlot.get(s.id);
                   const status = s.is_closed ? "cancelled" : b ? b.booking_status : "available";
                   return (
-                    <div key={s.id} className="flex items-center justify-between gap-2 border rounded-lg p-3">
+                    <div key={s.id} className="flex items-center justify-between gap-2 border rounded-xl p-3 bg-card">
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm truncate">{s.label ?? "Slot"}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {slotTimeRange(s.start_time, s.end_time)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{fmtMoney(s.price)}</div>
+                        <div className="text-xs text-muted-foreground">{slotTimeRange(s.start_time, s.end_time)}</div>
+                        <div className="text-xs font-semibold text-primary mt-0.5">{fmtMoney(s.price)}</div>
                         {b?.customer?.full_name && (
-                          <div className="text-xs mt-0.5 truncate">{b.customer.full_name}</div>
+                          <div className="text-xs mt-0.5 truncate text-muted-foreground">{b.customer.full_name}</div>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -245,12 +382,28 @@ function CalendarPage() {
                           <span className={cn("size-1.5 rounded-full", dotColor(status))} />
                           {status}
                         </span>
-                        <button
-                          onClick={() => openSlot(s)}
-                          className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium"
-                        >
-                          {status === "available" ? "Book" : "View"}
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openSlot(s)}
+                            className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium"
+                          >
+                            {status === "available" ? "Book" : "View"}
+                          </button>
+                          <button
+                            onClick={() => openEditSlot(s)}
+                            title="Edit"
+                            className="p-1.5 rounded-lg bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button
+                            onClick={() => openDeleteConfirm(s)}
+                            title="Delete"
+                            className="p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -260,6 +413,140 @@ function CalendarPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Edit Slot Dialog ── */}
+      <Dialog open={!!editingSlot} onOpenChange={(o) => { if (!o) setEditingSlot(null); }}>
+        <DialogContent className="sm:max-w-md w-[95vw]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="size-4" /> Edit Slot
+            </DialogTitle>
+            {editingSlot && (
+              <p className="text-xs text-muted-foreground">
+                {editingSlot.label ?? "Slot"} · {editingSlot.date}
+              </p>
+            )}
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Label */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-label">Session Label</Label>
+              <Input
+                id="edit-label"
+                value={editForm.label}
+                onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))}
+                placeholder="e.g. Morning, Night…"
+              />
+            </div>
+
+            {/* Date */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-date">Date</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={editForm.date}
+                onChange={(e) => setEditForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </div>
+
+            {/* Times */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-start">Start Time</Label>
+                <Input
+                  id="edit-start"
+                  type="time"
+                  value={editForm.start_time}
+                  onChange={(e) => setEditForm((f) => ({ ...f, start_time: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-end">End Time</Label>
+                <Input
+                  id="edit-end"
+                  type="time"
+                  value={editForm.end_time}
+                  onChange={(e) => setEditForm((f) => ({ ...f, end_time: e.target.value }))}
+                />
+              </div>
+            </div>
+            {isOvernight && (
+              <p className="text-xs text-amber-500 flex items-center gap-1">
+                🌙 Overnight slot — ends next day
+              </p>
+            )}
+
+            {/* Price */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-price">Price (BHD)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">BHD</span>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))}
+                  className="pl-14"
+                  placeholder="0.000"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 flex-row">
+            <Button variant="outline" className="flex-1" onClick={() => setEditingSlot(null)} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleSaveEdit}
+              disabled={isSaving || !editForm.date || !editForm.start_time || !editForm.end_time}
+            >
+              {isSaving ? "Saving…" : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Slot Confirm ── */}
+      <AlertDialog open={!!deletingSlot} onOpenChange={(o) => { if (!o) setDeletingSlot(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="size-4" /> Delete Slot?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                {deletingSlot && (
+                  <div className="rounded-lg bg-muted/50 p-3 space-y-1 text-sm">
+                    <p className="font-medium">{deletingSlot.label ?? "Slot"}</p>
+                    <p className="text-muted-foreground">📅 {deletingSlot.date}</p>
+                    <p className="text-muted-foreground">🕐 {slotTimeRange(deletingSlot.start_time, deletingSlot.end_time)}</p>
+                    <p className="font-semibold text-primary">{fmtMoney(deletingSlot.price)}</p>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  This will permanently delete the slot and any bookings linked to it. This cannot be undone.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSlot}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting…" : "Delete Slot"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
