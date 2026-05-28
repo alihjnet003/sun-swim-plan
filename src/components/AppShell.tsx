@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { Calendar, LayoutDashboard, ListChecks, BarChart3, CalendarClock, Waves, Menu, X, Users, Database, LogOut, Languages, Moon, Sun } from "lucide-react";
+import { Calendar, LayoutDashboard, ListChecks, BarChart3, CalendarClock, Waves, Menu, X, Users, Database, LogOut, Languages, Moon, Sun, MessageSquarePlus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -15,6 +15,7 @@ const baseNav = [
   { to: "/bookings", labelKey: "nav.bookings", icon: ListChecks, adminOnly: false },
   { to: "/slots", labelKey: "nav.slots", icon: CalendarClock, adminOnly: false },
   { to: "/reports", labelKey: "nav.reports", icon: BarChart3, adminOnly: false },
+  { to: "/import", labelKey: "nav.import", icon: MessageSquarePlus, adminOnly: false },
   { to: "/users", labelKey: "nav.users", icon: Users, adminOnly: true },
   { to: "/backups", labelKey: "nav.backups", icon: Database, adminOnly: true },
 ] as const;
