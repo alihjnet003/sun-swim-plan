@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2, Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -216,6 +216,11 @@ function CalendarPage() {
           </div>
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m + 1, 1))}><ChevronRight className="size-4" /></Button>
           <Button variant="outline" size="sm" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>Today</Button>
+          <ShareButton />
+        </div>
+      </div>
+      <div style={{ display: "none" }}>
+        <span>
         </div>
       </div>
 
