@@ -422,14 +422,23 @@ function ImportPage() {
                 {/* Card header */}
                 <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    {/* Checkbox */}
-                    {!isCreated && (
+                    {/* Checkbox / Update button */}
+                    {!isCreated && !b._conflict && (
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(b._id)}
                         className="size-4 accent-primary cursor-pointer"
                       />
+                    )}
+                    {!isCreated && b._conflict && (
+                      <button
+                        onClick={() => handleUpdateExisting(b)}
+                        disabled={isCreating}
+                        className="text-xs bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg font-medium disabled:opacity-60"
+                      >
+                        {isCreating ? "جاري التحديث..." : "تحديث الحجز"}
+                      </button>
                     )}
                     {isCreated && !isCreating && <Check className="size-4 text-success" />}
                     {isCreating && <Loader2 className="size-4 animate-spin text-primary" />}
