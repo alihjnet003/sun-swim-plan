@@ -219,8 +219,6 @@ function CalendarPage() {
           <ShareButton />
         </div>
       </div>
-        </div>
-      </div>
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
