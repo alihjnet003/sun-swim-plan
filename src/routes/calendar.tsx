@@ -560,3 +560,23 @@ function Legend({ color, label }: { color: string; label: string }) {
     </div>
   );
 }
+
+function ShareButton() {
+  const [copied, setCopied] = useState(false);
+  const handleShare = async () => {
+    try {
+      const url = `${window.location.origin}/public/calendar`;
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("تم نسخ الرابط!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("تعذر نسخ الرابط");
+    }
+  };
+  return (
+    <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+      {copied ? <><Check className="size-4 text-success" /> تم النسخ</> : <><Share2 className="size-4" /> مشاركة التقويم</>}
+    </Button>
+  );
+}
