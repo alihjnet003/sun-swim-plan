@@ -266,7 +266,7 @@ function ImportPage() {
           .from("bookings")
           .insert({
             slot_id:        slotId,
-            customer_id:    customerId,
+            customer_id:    customerId!,
             booking_status: b.status === "pending" ? "new" : "confirmed",
             total_amount:   b.total_price ?? 0,
             paid_amount:    b.paid_amount ?? 0,
