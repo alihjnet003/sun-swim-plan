@@ -76,6 +76,7 @@ function sessionDotColor(s: string) {
 /* ── Page component ─────────────────────────── */
 function ImportPage() {
   const invalidate = useInvalidateAll();
+  const navigate = useNavigate();
 
   const [text, setText] = useState("");
   const [bookings, setBookings] = useState<ParsedBooking[]>([]);
@@ -86,7 +87,7 @@ function ImportPage() {
   const [creatingIds, setCreatingIds] = useState<Set<number>>(new Set());
   const [createdIds, setCreatedIds] = useState<Set<number>>(new Set());
 
-  /* ── Parse via Claude API ─────────────────── */
+  /* ── Parse via Edge Function ─────────────────── */
   async function handleParse() {
     if (!text.trim()) return;
     setLoading(true);
@@ -96,28 +97,94 @@ function ImportPage() {
     setCreatedIds(new Set());
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: `Parse these bookings:\n\n${text}` }],
-        }),
+      const { data, error } = await supabase.functions.invoke("parse-bookings", {
+        body: { message: text },
       });
 
-      const data = await res.json();
-      const raw  = data.content?.[0]?.text ?? "";
-      const json = raw.replace(/```json|```/g, "").trim();
-      const arr  = JSON.parse(json) as Omit<ParsedBooking, "_id">[];
-      const withIds = arr.map((b, i) => ({ ...b, _id: i }));
-      setBookings(withIds);
-      setSelected(new Set(withIds.map((b) => b._id)));
-    } catch {
-      setParseError("فشل التحليل — تأكد من الرسالة وحاول مجدداً.");
+      if (error) throw new Error(`Edge Function error: ${error.message}`);
+      if (!data) throw new Error("No response from server");
+      if (data.error) throw new Error(data.error);
+      if (!data.bookings || !Array.isArray(data.bookings)) {
+        throw new Error("Invalid response format");
+      }
+
+      const arr = data.bookings as Omit<ParsedBooking, "_id" | "_conflict" | "_conflictBookingId">[];
+      if (arr.length === 0) throw new Error("No bookings found in message");
+
+      const withIds: ParsedBooking[] = arr.map((b, i) => ({ ...b, _id: i, _conflict: false }));
+
+      const withConflicts = await Promise.all(
+        withIds.map(async (b) => {
+          try {
+            const { data: slot } = await supabase
+              .from("booking_slots")
+              .select("id")
+              .eq("date", b.date)
+              .eq("start_time", b.start_time)
+              .eq("end_time", b.end_time)
+              .maybeSingle();
+
+            if (!slot) return b;
+
+            const { data: existing } = await supabase
+              .from("bookings")
+              .select("id")
+              .eq("slot_id", slot.id)
+              .maybeSingle();
+
+            return {
+              ...b,
+              _conflict: !!existing,
+              _conflictBookingId: existing?.id ?? undefined,
+            };
+          } catch {
+            return b;
+          }
+        })
+      );
+
+      setBookings(withConflicts);
+      setSelected(new Set(withConflicts.filter((b) => !b._conflict).map((b) => b._id)));
+    } catch (e: any) {
+      setParseError(e.message ?? "فشل التحليل — تأكد من الرسالة وحاول مجدداً.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleUpdateExisting(b: ParsedBooking) {
+    if (!b._conflictBookingId) return;
+
+    setCreatingIds((s) => new Set([...s, b._id]));
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({
+          booking_status: b.status === "pending" ? "new" : "confirmed",
+          paid_amount: b.paid_amount ?? 0,
+          notes: b.notes ?? null,
+        })
+        .eq("id", b._conflictBookingId);
+
+      if (error) throw error;
+
+      if ((b.paid_amount ?? 0) > 0) {
+        await supabase.from("payments").insert({
+          booking_id: b._conflictBookingId,
+          amount: b.paid_amount!,
+          payment_date: new Date().toISOString().slice(0, 10),
+          method: "cash",
+          notes: "Updated from message import",
+        });
+      }
+
+      setCreatedIds((s) => new Set([...s, b._id]));
+      toast.success(`✓ تم تحديث حجز ${b.date}`);
+      invalidate();
+    } catch (e: any) {
+      toast.error(`فشل التحديث: ${e.message}`);
+    } finally {
+      setCreatingIds((s) => { const n = new Set(s); n.delete(b._id); return n; });
     }
   }
 
