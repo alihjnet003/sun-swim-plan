@@ -73,12 +73,14 @@ function AuthGate() {
   const location = useLocation();
   const navigate = useNavigate();
   const isLogin = location.pathname === "/login";
+  const isPublic = location.pathname.startsWith("/public/");
 
   useEffect(() => {
     if (loading) return;
-    if (!session && !isLogin) navigate({ to: "/login" });
-  }, [loading, session, isLogin, navigate]);
+    if (!session && !isLogin && !isPublic) navigate({ to: "/login" });
+  }, [loading, session, isLogin, isPublic, navigate]);
 
+  if (isPublic) return <Outlet />;
   if (loading) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
   }

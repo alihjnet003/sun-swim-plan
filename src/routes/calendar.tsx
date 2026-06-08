@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2, Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -216,6 +216,7 @@ function CalendarPage() {
           </div>
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m + 1, 1))}><ChevronRight className="size-4" /></Button>
           <Button variant="outline" size="sm" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>Today</Button>
+          <ShareButton />
         </div>
       </div>
 
@@ -557,5 +558,25 @@ function Legend({ color, label }: { color: string; label: string }) {
       <span className={cn("inline-block size-3 rounded border", color)} />
       {label}
     </div>
+  );
+}
+
+function ShareButton() {
+  const [copied, setCopied] = useState(false);
+  const handleShare = async () => {
+    try {
+      const url = `${window.location.origin}/public/calendar`;
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("تم نسخ الرابط!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("تعذر نسخ الرابط");
+    }
+  };
+  return (
+    <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+      {copied ? <><Check className="size-4 text-success" /> تم النسخ</> : <><Share2 className="size-4" /> مشاركة التقويم</>}
+    </Button>
   );
 }
