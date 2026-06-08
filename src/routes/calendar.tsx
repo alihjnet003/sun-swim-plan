@@ -219,8 +219,6 @@ function CalendarPage() {
           <ShareButton />
         </div>
       </div>
-      <div style={{ display: "none" }}>
-        <span>
         </div>
       </div>
 
