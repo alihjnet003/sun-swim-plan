@@ -14,6 +14,8 @@ export const Route = createFileRoute("/import")({ component: ImportPage });
 /* ── Types ─────────────────────────────────── */
 interface ParsedBooking {
   _id: number;
+  _conflict: boolean;
+  _conflictBookingId?: string;
   date: string;
   session: string;
   start_time: string;
