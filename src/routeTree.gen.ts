@@ -13,6 +13,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as SlotsRouteImport } from './routes/slots'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ImportRouteImport } from './routes/import'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as BackupsRouteImport } from './routes/backups'
@@ -38,6 +39,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarRoute = CalendarRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/backups': typeof BackupsRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
+  '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/backups': typeof BackupsRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
+  '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/backups': typeof BackupsRoute
   '/bookings': typeof BookingsRouteWithChildren
   '/calendar': typeof CalendarRoute
+  '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/slots': typeof SlotsRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/backups'
     | '/bookings'
     | '/calendar'
+    | '/import'
     | '/login'
     | '/reports'
     | '/slots'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/backups'
     | '/bookings'
     | '/calendar'
+    | '/import'
     | '/login'
     | '/reports'
     | '/slots'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/backups'
     | '/bookings'
     | '/calendar'
+    | '/import'
     | '/login'
     | '/reports'
     | '/slots'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   BackupsRoute: typeof BackupsRoute
   BookingsRoute: typeof BookingsRouteWithChildren
   CalendarRoute: typeof CalendarRoute
+  ImportRoute: typeof ImportRoute
   LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
   SlotsRoute: typeof SlotsRoute
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendar': {
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   BackupsRoute: BackupsRoute,
   BookingsRoute: BookingsRouteWithChildren,
   CalendarRoute: CalendarRoute,
+  ImportRoute: ImportRoute,
   LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
   SlotsRoute: SlotsRoute,
@@ -261,13 +282,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

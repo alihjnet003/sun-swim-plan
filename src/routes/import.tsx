@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { MessageSquarePlus, Sparkles, Check, Loader2, AlertCircle } from "lucide-react";
+import { MessageSquarePlus, Sparkles, Check, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ export const Route = createFileRoute("/import")({ component: ImportPage });
 /* ── Types ─────────────────────────────────── */
 interface ParsedBooking {
   _id: number;
+  _conflict: boolean;
+  _conflictBookingId?: string;
   date: string;
   session: string;
   start_time: string;
@@ -74,6 +76,7 @@ function sessionDotColor(s: string) {
 /* ── Page component ─────────────────────────── */
 function ImportPage() {
   const invalidate = useInvalidateAll();
+  const navigate = useNavigate();
 
   const [text, setText] = useState("");
   const [bookings, setBookings] = useState<ParsedBooking[]>([]);
@@ -84,7 +87,7 @@ function ImportPage() {
   const [creatingIds, setCreatingIds] = useState<Set<number>>(new Set());
   const [createdIds, setCreatedIds] = useState<Set<number>>(new Set());
 
-  /* ── Parse via Claude API ─────────────────── */
+  /* ── Parse via Edge Function ─────────────────── */
   async function handleParse() {
     if (!text.trim()) return;
     setLoading(true);
@@ -94,28 +97,94 @@ function ImportPage() {
     setCreatedIds(new Set());
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: `Parse these bookings:\n\n${text}` }],
-        }),
+      const { data, error } = await supabase.functions.invoke("parse-bookings", {
+        body: { message: text },
       });
 
-      const data = await res.json();
-      const raw  = data.content?.[0]?.text ?? "";
-      const json = raw.replace(/```json|```/g, "").trim();
-      const arr  = JSON.parse(json) as Omit<ParsedBooking, "_id">[];
-      const withIds = arr.map((b, i) => ({ ...b, _id: i }));
-      setBookings(withIds);
-      setSelected(new Set(withIds.map((b) => b._id)));
-    } catch {
-      setParseError("فشل التحليل — تأكد من الرسالة وحاول مجدداً.");
+      if (error) throw new Error(`Edge Function error: ${error.message}`);
+      if (!data) throw new Error("No response from server");
+      if (data.error) throw new Error(data.error);
+      if (!data.bookings || !Array.isArray(data.bookings)) {
+        throw new Error("Invalid response format");
+      }
+
+      const arr = data.bookings as Omit<ParsedBooking, "_id" | "_conflict" | "_conflictBookingId">[];
+      if (arr.length === 0) throw new Error("No bookings found in message");
+
+      const withIds: ParsedBooking[] = arr.map((b, i) => ({ ...b, _id: i, _conflict: false }));
+
+      const withConflicts = await Promise.all(
+        withIds.map(async (b) => {
+          try {
+            const { data: slot } = await supabase
+              .from("booking_slots")
+              .select("id")
+              .eq("date", b.date)
+              .eq("start_time", b.start_time)
+              .eq("end_time", b.end_time)
+              .maybeSingle();
+
+            if (!slot) return b;
+
+            const { data: existing } = await supabase
+              .from("bookings")
+              .select("id")
+              .eq("slot_id", slot.id)
+              .maybeSingle();
+
+            return {
+              ...b,
+              _conflict: !!existing,
+              _conflictBookingId: existing?.id ?? undefined,
+            };
+          } catch {
+            return b;
+          }
+        })
+      );
+
+      setBookings(withConflicts);
+      setSelected(new Set(withConflicts.filter((b) => !b._conflict).map((b) => b._id)));
+    } catch (e: any) {
+      setParseError(e.message ?? "فشل التحليل — تأكد من الرسالة وحاول مجدداً.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleUpdateExisting(b: ParsedBooking) {
+    if (!b._conflictBookingId) return;
+
+    setCreatingIds((s) => new Set([...s, b._id]));
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({
+          booking_status: b.status === "pending" ? "new" : "confirmed",
+          paid_amount: b.paid_amount ?? 0,
+          notes: b.notes ?? null,
+        })
+        .eq("id", b._conflictBookingId);
+
+      if (error) throw error;
+
+      if ((b.paid_amount ?? 0) > 0) {
+        await supabase.from("payments").insert({
+          booking_id: b._conflictBookingId,
+          amount: b.paid_amount!,
+          payment_date: new Date().toISOString().slice(0, 10),
+          payment_method: "cash",
+          notes: "Updated from message import",
+        });
+      }
+
+      setCreatedIds((s) => new Set([...s, b._id]));
+      toast.success(`✓ تم تحديث حجز ${b.date}`);
+      invalidate();
+    } catch (e: any) {
+      toast.error(`فشل التحديث: ${e.message}`);
+    } finally {
+      setCreatingIds((s) => { const n = new Set(s); n.delete(b._id); return n; });
     }
   }
 
@@ -196,10 +265,11 @@ function ImportPage() {
         const { data: newBooking, error: bookErr } = await supabase
           .from("bookings")
           .insert({
+            booking_number: `IMP-${Date.now()}-${id}`,
             slot_id:        slotId,
-            customer_id:    customerId,
+            customer_id:    customerId!,
             booking_status: b.status === "pending" ? "new" : "confirmed",
-            total_amount:   b.total_price ?? 0,
+            subtotal:       b.total_price ?? 0,
             paid_amount:    b.paid_amount ?? 0,
             notes:          b.notes ?? null,
           })
@@ -213,7 +283,7 @@ function ImportPage() {
             booking_id:   newBooking.id,
             amount:       b.paid_amount!,
             payment_date: new Date().toISOString().slice(0, 10),
-            method:       "cash",
+            payment_method: "cash",
             notes:        "Imported from message",
           });
         }
@@ -323,21 +393,52 @@ function ImportPage() {
                 className={cn(
                   "rounded-xl border bg-card p-4 transition-all",
                   isCreated  ? "border-success/40 bg-success/5 opacity-75" : "",
-                  isSelected && !isCreated ? "border-primary/50" : "",
-                  !isSelected && !isCreated ? "opacity-60" : "",
+                  b._conflict && !isCreated ? "border-orange-500/50" : "",
+                  isSelected && !isCreated && !b._conflict ? "border-primary/50" : "",
+                  !isSelected && !isCreated && !b._conflict ? "opacity-60" : "",
                 )}
               >
+                {b._conflict && !isCreated && (
+                  <div className="mb-4 flex items-start gap-3 rounded-lg border border-orange-500/30 bg-orange-500/10 p-3">
+                    <AlertTriangle className="size-5 text-orange-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-orange-400">
+                        حجز موجود مسبقاً لهذا الوقت
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        يمكنك تعديل البيانات أدناه ثم الضغط على "تحديث الحجز" بدلاً من إنشاء حجز جديد
+                      </div>
+                    </div>
+                    {b._conflictBookingId && (
+                      <button
+                        onClick={() => navigate({ to: "/bookings/$id", params: { id: b._conflictBookingId! } })}
+                        className="text-xs text-orange-400 hover:text-orange-300 underline shrink-0 mt-0.5"
+                      >
+                        عرض الحجز ←
+                      </button>
+                    )}
+                  </div>
+                )}
                 {/* Card header */}
                 <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    {/* Checkbox */}
-                    {!isCreated && (
+                    {/* Checkbox / Update button */}
+                    {!isCreated && !b._conflict && (
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(b._id)}
                         className="size-4 accent-primary cursor-pointer"
                       />
+                    )}
+                    {!isCreated && b._conflict && (
+                      <button
+                        onClick={() => handleUpdateExisting(b)}
+                        disabled={isCreating}
+                        className="text-xs bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg font-medium disabled:opacity-60"
+                      >
+                        {isCreating ? "جاري التحديث..." : "تحديث الحجز"}
+                      </button>
                     )}
                     {isCreated && !isCreating && <Check className="size-4 text-success" />}
                     {isCreating && <Loader2 className="size-4 animate-spin text-primary" />}
