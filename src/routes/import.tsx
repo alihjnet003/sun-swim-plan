@@ -393,10 +393,32 @@ function ImportPage() {
                 className={cn(
                   "rounded-xl border bg-card p-4 transition-all",
                   isCreated  ? "border-success/40 bg-success/5 opacity-75" : "",
-                  isSelected && !isCreated ? "border-primary/50" : "",
-                  !isSelected && !isCreated ? "opacity-60" : "",
+                  b._conflict && !isCreated ? "border-orange-500/50" : "",
+                  isSelected && !isCreated && !b._conflict ? "border-primary/50" : "",
+                  !isSelected && !isCreated && !b._conflict ? "opacity-60" : "",
                 )}
               >
+                {b._conflict && !isCreated && (
+                  <div className="mb-4 flex items-start gap-3 rounded-lg border border-orange-500/30 bg-orange-500/10 p-3">
+                    <AlertTriangle className="size-5 text-orange-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-orange-400">
+                        حجز موجود مسبقاً لهذا الوقت
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        يمكنك تعديل البيانات أدناه ثم الضغط على "تحديث الحجز" بدلاً من إنشاء حجز جديد
+                      </div>
+                    </div>
+                    {b._conflictBookingId && (
+                      <button
+                        onClick={() => navigate({ to: "/bookings/$id", params: { id: b._conflictBookingId! } })}
+                        className="text-xs text-orange-400 hover:text-orange-300 underline shrink-0 mt-0.5"
+                      >
+                        عرض الحجز ←
+                      </button>
+                    )}
+                  </div>
+                )}
                 {/* Card header */}
                 <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
                   <div className="flex items-center gap-2.5 flex-wrap">
