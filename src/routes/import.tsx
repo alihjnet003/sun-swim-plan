@@ -173,7 +173,7 @@ function ImportPage() {
           booking_id: b._conflictBookingId,
           amount: b.paid_amount!,
           payment_date: new Date().toISOString().slice(0, 10),
-          method: "cash",
+          payment_method: "cash",
           notes: "Updated from message import",
         });
       }
