@@ -265,10 +265,11 @@ function ImportPage() {
         const { data: newBooking, error: bookErr } = await supabase
           .from("bookings")
           .insert({
+            booking_number: `IMP-${Date.now()}-${id}`,
             slot_id:        slotId,
             customer_id:    customerId!,
             booking_status: b.status === "pending" ? "new" : "confirmed",
-            total_amount:   b.total_price ?? 0,
+            subtotal:       b.total_price ?? 0,
             paid_amount:    b.paid_amount ?? 0,
             notes:          b.notes ?? null,
           })
@@ -282,7 +283,7 @@ function ImportPage() {
             booking_id:   newBooking.id,
             amount:       b.paid_amount!,
             payment_date: new Date().toISOString().slice(0, 10),
-            method:       "cash",
+            payment_method: "cash",
             notes:        "Imported from message",
           });
         }
