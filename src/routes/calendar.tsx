@@ -563,20 +563,91 @@ function Legend({ color, label }: { color: string; label: string }) {
 
 function ShareButton() {
   const [copied, setCopied] = useState(false);
-  const handleShare = async () => {
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+  const url = typeof window !== "undefined" ? `${window.location.origin}/public/calendar` : "";
+
+  const legacyCopy = (text: string): boolean => {
     try {
-      const url = `${window.location.origin}/public/calendar`;
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast.success("تم نسخ الرابط!");
-      setTimeout(() => setCopied(false), 2000);
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "0";
+      ta.style.left = "0";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
     } catch {
-      toast.error("تعذر نسخ الرابط");
+      return false;
     }
   };
+
+  const markCopied = () => {
+    setCopied(true);
+    toast.success("تم نسخ الرابط!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    // 1. Web Share API (best on mobile)
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "تقويم الحجوزات", url });
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return; // user cancelled
+        // fall through to copy
+      }
+    }
+    // 2. Clipboard API
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(url);
+        markCopied();
+        return;
+      } catch {
+        // fall through
+      }
+    }
+    // 3. Legacy execCommand
+    if (legacyCopy(url)) {
+      markCopied();
+      return;
+    }
+    // 4. Manual fallback
+    setFallbackOpen(true);
+  };
+
+  const handleManualCopy = () => {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(markCopied).catch(() => legacyCopy(url) && markCopied());
+    } else if (legacyCopy(url)) {
+      markCopied();
+    }
+  };
+
   return (
-    <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
-      {copied ? <><Check className="size-4 text-success" /> تم النسخ</> : <><Share2 className="size-4" /> مشاركة التقويم</>}
-    </Button>
+    <>
+      <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+        {copied ? <><Check className="size-4 text-success" /> تم النسخ</> : <><Share2 className="size-4" /> مشاركة التقويم</>}
+      </Button>
+      <Dialog open={fallbackOpen} onOpenChange={setFallbackOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>انسخ الرابط</DialogTitle>
+          </DialogHeader>
+          <Input value={url} readOnly onFocus={(e) => e.currentTarget.select()} dir="ltr" />
+          <DialogFooter>
+            <Button onClick={handleManualCopy}>نسخ</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
+
