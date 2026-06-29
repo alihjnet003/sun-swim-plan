@@ -76,11 +76,12 @@ function BookingsList() {
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Payment</th>
                 <th className="text-left px-4 py-3">Created by</th>
+                <th className="text-right px-4 py-3 w-12"></th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {isLoading && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Loading…</td></tr>}
-              {!isLoading && filtered.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No bookings match your filters.</td></tr>}
+              {isLoading && <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Loading…</td></tr>}
+              {!isLoading && filtered.length === 0 && <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">No bookings match your filters.</td></tr>}
               {filtered.map((b) => (
                 <tr key={b.id} className="hover:bg-accent/30">
                   <td className="px-4 py-3">
@@ -102,6 +103,16 @@ function BookingsList() {
                   <td className="px-4 py-3"><PaymentStatusBadge status={b.payment_status} /></td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
                     {b.created_by ? profiles?.get(b.created_by) ?? "—" : "—"}
+                  </td>
+                  <td className="px-2 py-3 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Download invoice PDF"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); generateInvoicePDF(b, "save"); }}
+                    >
+                      <Download className="size-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}
