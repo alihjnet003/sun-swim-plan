@@ -564,7 +564,30 @@ function Legend({ color, label }: { color: string; label: string }) {
 function ShareButton() {
   const [copied, setCopied] = useState(false);
   const [fallbackOpen, setFallbackOpen] = useState(false);
-  const url = typeof window !== "undefined" ? `${window.location.origin}/public/calendar` : "";
+  const [siteUrl, setSiteUrl] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    const stored = localStorage.getItem("publicSiteUrl");
+    if (stored) return stored.replace(/\/+$/, "");
+    const origin = window.location.origin;
+    // Preview URLs (id-preview--<uuid>.lovable.app and sandbox.lovable.dev) require
+    // a login, so they can never be shared publicly. Force the admin to set their
+    // real published URL once.
+    if (/id-preview--|sandbox\.lovable\.dev|localhost|127\.0\.0\.1/.test(origin)) return "";
+    return origin;
+  });
+  const [draftUrl, setDraftUrl] = useState(siteUrl);
+  const url = siteUrl ? `${siteUrl}/public/calendar` : "";
+  const isPreview = !siteUrl;
+
+  const saveDraft = () => {
+    const cleaned = draftUrl.trim().replace(/\/+$/, "");
+    if (!/^https?:\/\//.test(cleaned)) {
+      toast.error("الرابط يجب أن يبدأ بـ https://");
+      return;
+    }
+    localStorage.setItem("publicSiteUrl", cleaned);
+    setSiteUrl(cleaned);
+  };
 
   const legacyCopy = (text: string): boolean => {
     try {
@@ -594,36 +617,34 @@ function ShareButton() {
   };
 
   const handleShare = async () => {
-    // 1. Web Share API (best on mobile)
+    if (isPreview) {
+      setFallbackOpen(true);
+      return;
+    }
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({ title: "تقويم الحجوزات", url });
         return;
       } catch (e: any) {
-        if (e?.name === "AbortError") return; // user cancelled
-        // fall through to copy
+        if (e?.name === "AbortError") return;
       }
     }
-    // 2. Clipboard API
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(url);
         markCopied();
         return;
-      } catch {
-        // fall through
-      }
+      } catch {/* fall through */}
     }
-    // 3. Legacy execCommand
     if (legacyCopy(url)) {
       markCopied();
       return;
     }
-    // 4. Manual fallback
     setFallbackOpen(true);
   };
 
   const handleManualCopy = () => {
+    if (!url) return;
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url).then(markCopied).catch(() => legacyCopy(url) && markCopied());
     } else if (legacyCopy(url)) {
@@ -639,12 +660,36 @@ function ShareButton() {
       <Dialog open={fallbackOpen} onOpenChange={setFallbackOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>انسخ الرابط</DialogTitle>
+            <DialogTitle>{isPreview ? "إعداد رابط الموقع المنشور" : "انسخ الرابط"}</DialogTitle>
           </DialogHeader>
-          <Input value={url} readOnly onFocus={(e) => e.currentTarget.select()} dir="ltr" />
-          <DialogFooter>
-            <Button onClick={handleManualCopy}>نسخ</Button>
-          </DialogFooter>
+          {isPreview ? (
+            <div className="space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                أنت تستخدم رابط المعاينة الذي يتطلب تسجيل الدخول. أدخل رابط الموقع المنشور (مثل
+                <span dir="ltr" className="mx-1 font-mono">https://your-app.lovable.app</span>)
+                ليتم إنشاء رابط مشاركة عام.
+              </p>
+              <Input
+                value={draftUrl}
+                onChange={(e) => setDraftUrl(e.target.value)}
+                placeholder="https://your-app.lovable.app"
+                dir="ltr"
+              />
+              <DialogFooter>
+                <Button onClick={saveDraft}>حفظ</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <>
+              <Input value={url} readOnly onFocus={(e) => e.currentTarget.select()} dir="ltr" />
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button variant="ghost" onClick={() => { setSiteUrl(""); setDraftUrl(""); localStorage.removeItem("publicSiteUrl"); }}>
+                  تغيير الرابط
+                </Button>
+                <Button onClick={handleManualCopy}>نسخ</Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
