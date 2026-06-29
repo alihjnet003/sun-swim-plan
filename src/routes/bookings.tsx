@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { useAllBookings, useProfilesMap } from "@/lib/queries";
 import { fmtDate, fmtMoney, slotTimeRange } from "@/lib/format";
+import { generateInvoicePDF } from "@/lib/invoice-pdf";
 
 export const Route = createFileRoute("/bookings")({ component: BookingsList });
 
