@@ -88,7 +88,7 @@ function dotClass(st: Status) {
 function pad(n: number) { return n.toString().padStart(2, "0"); }
 function toKey(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 
-function sessionLabel(start: string, t: typeof T["ar"]) {
+function sessionLabel(start: string, t: (typeof T)[Lang]) {
   const h = parseInt(start.split(":")[0], 10);
   if (h >= 20 || h < 8) return t.night;
   if (h < 12) return t.morning;
