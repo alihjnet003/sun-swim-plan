@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +12,8 @@ export const Route = createFileRoute("/public/calendar")({
   component: PublicCalendarPage,
   head: () => ({
     meta: [
-      { title: "The Private Pool — التقويم العام" },
-      { name: "description", content: "تقويم توفر الجلسات في The Private Pool" },
+      { title: "The Private Pool — Public Calendar / التقويم العام" },
+      { name: "description", content: "Session availability calendar for The Private Pool. تقويم توفر الجلسات." },
     ],
   }),
 });
@@ -28,17 +28,55 @@ interface PublicSlot {
 }
 
 type Status = "available" | "booked" | "closed";
+type Lang = "ar" | "en";
+
+const T = {
+  ar: {
+    subtitle: "استراحة خاصة — التقويم العام",
+    today: "اليوم",
+    available: "متاح",
+    booked: "محجوز",
+    closed: "مغلق",
+    holiday: "عطلة",
+    weekdays: ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"],
+    statusAvailable: "متاح ✅",
+    statusBooked: "محجوز 🔴",
+    statusClosed: "مغلق ⚫",
+    noSessions: "لا توجد جلسات في هذا اليوم",
+    contact: "للحجز تواصل معنا على واتساب",
+    whatsapp: "واتساب",
+    morning: "الجلسة الصباحية",
+    afternoon: "جلسة المساء",
+    evening: "الجلسة المسائية",
+    night: "الجلسة الليلية",
+    langToggle: "EN",
+  },
+  en: {
+    subtitle: "Private Resort — Public Calendar",
+    today: "Today",
+    available: "Available",
+    booked: "Booked",
+    closed: "Closed",
+    holiday: "Holiday",
+    weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    statusAvailable: "Available ✅",
+    statusBooked: "Booked 🔴",
+    statusClosed: "Closed ⚫",
+    noSessions: "No sessions on this day",
+    contact: "To book, contact us on WhatsApp",
+    whatsapp: "WhatsApp",
+    morning: "Morning session",
+    afternoon: "Afternoon session",
+    evening: "Evening session",
+    night: "Night session",
+    langToggle: "العربية",
+  },
+} as const;
 
 function statusOf(s: PublicSlot): Status {
   if (s.is_closed) return "closed";
   if (s.bookings && s.bookings.length > 0) return "booked";
   return "available";
-}
-
-function statusLabel(st: Status) {
-  if (st === "available") return "متاح ✅";
-  if (st === "booked") return "محجوز 🔴";
-  return "مغلق ⚫";
 }
 
 function dotClass(st: Status) {
@@ -50,15 +88,26 @@ function dotClass(st: Status) {
 function pad(n: number) { return n.toString().padStart(2, "0"); }
 function toKey(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 
-function sessionLabel(start: string) {
+function sessionLabel(start: string, t: (typeof T)[Lang]) {
   const h = parseInt(start.split(":")[0], 10);
-  if (h >= 20 || h < 8) return "الجلسة الليلية";
-  if (h < 12) return "الجلسة الصباحية";
-  if (h < 18) return "الجلسة المسائية";
-  return "جلسة المساء";
+  if (h >= 20 || h < 8) return t.night;
+  if (h < 12) return t.morning;
+  if (h < 18) return t.evening;
+  return t.afternoon;
 }
 
 function PublicCalendarPage() {
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window === "undefined") return "ar";
+    return (localStorage.getItem("public-cal-lang") as Lang) || "ar";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("public-cal-lang", lang);
+  }, [lang]);
+  const t = T[lang];
+  const dir = lang === "ar" ? "rtl" : "ltr";
+  const locale = lang === "ar" ? "ar" : "en-US";
+
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const y = cursor.getFullYear();
@@ -79,6 +128,8 @@ function PublicCalendarPage() {
       if (error) throw error;
       return (data ?? []) as unknown as PublicSlot[];
     },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -87,7 +138,12 @@ function PublicCalendarPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "booking_slots" }, () => refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => refetch())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [refetch]);
 
   const byDate = useMemo(() => {
@@ -109,32 +165,44 @@ function PublicCalendarPage() {
   const todayKey = toKey(new Date());
   const selectedSlots = selectedDay ? (byDate[selectedDay] ?? []) : [];
 
+  const statusLabel = (st: Status) =>
+    st === "available" ? t.statusAvailable : st === "booked" ? t.statusBooked : t.statusClosed;
+
+  const PrevIcon = lang === "ar" ? ChevronRight : ChevronLeft;
+  const NextIcon = lang === "ar" ? ChevronLeft : ChevronRight;
+
   return (
-    <div dir="rtl" className="min-h-screen bg-background text-foreground">
+    <div dir={dir} className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")}>
+            <Languages className="size-4" /> {t.langToggle}
+          </Button>
+        </div>
+
         <header className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold">The Private Pool 🏊</h1>
-          <p className="text-muted-foreground text-sm">استراحة خاصة — التقويم العام</p>
+          <p className="text-muted-foreground text-sm">{t.subtitle}</p>
         </header>
 
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><ChevronRight className="size-4" /></Button>
+          <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><PrevIcon className="size-4" /></Button>
           <div className="font-semibold w-40 text-center text-sm sm:text-base">
-            {cursor.toLocaleDateString("ar", { month: "long", year: "numeric" })}
+            {cursor.toLocaleDateString(locale, { month: "long", year: "numeric" })}
           </div>
-          <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m + 1, 1))}><ChevronLeft className="size-4" /></Button>
-          <Button variant="outline" size="sm" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>اليوم</Button>
+          <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m + 1, 1))}><NextIcon className="size-4" /></Button>
+          <Button variant="outline" size="sm" onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }}>{t.today}</Button>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-success" /> متاح</span>
-          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-destructive" /> محجوز</span>
-          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-muted-foreground" /> مغلق</span>
-          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-amber-500" /> عطلة</span>
+          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-success" /> {t.available}</span>
+          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-destructive" /> {t.booked}</span>
+          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-muted-foreground" /> {t.closed}</span>
+          <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-full bg-amber-500" /> {t.holiday}</span>
         </div>
 
         <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted-foreground">
-          {["أحد","إثن","ثلا","أرب","خمي","جمع","سبت"].map((d) => <div key={d} className="py-1">{d}</div>)}
+          {t.weekdays.map((d) => <div key={d} className="py-1">{d}</div>)}
         </div>
 
         <div className="grid grid-cols-7 gap-1">
@@ -168,20 +236,20 @@ function PublicCalendarPage() {
         </div>
 
         <footer className="pt-4 text-center space-y-2 border-t">
-          <p className="text-sm text-muted-foreground">للحجز تواصل معنا على واتساب</p>
+          <p className="text-sm text-muted-foreground">{t.contact}</p>
           <Button asChild className="bg-green-600 hover:bg-green-700 text-white">
             <a href="https://wa.me/97333338208" target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="size-4" /> واتساب
+              <MessageCircle className="size-4" /> {t.whatsapp}
             </a>
           </Button>
         </footer>
       </div>
 
       <Sheet open={!!selectedDay} onOpenChange={(o) => !o && setSelectedDay(null)}>
-        <SheetContent side="bottom" dir="rtl">
+        <SheetContent side="bottom" dir={dir}>
           <SheetHeader>
             <SheetTitle>
-              {selectedDay && new Date(selectedDay).toLocaleDateString("ar", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {selectedDay && new Date(selectedDay).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-2 mt-4">
@@ -191,7 +259,7 @@ function PublicCalendarPage() {
               </div>
             )}
             {selectedSlots.length === 0 && (
-              <p className="text-muted-foreground text-sm text-center py-4">لا توجد جلسات في هذا اليوم</p>
+              <p className="text-muted-foreground text-sm text-center py-4">{t.noSessions}</p>
             )}
             {selectedSlots.map((s) => {
               const st = statusOf(s);
@@ -199,7 +267,7 @@ function PublicCalendarPage() {
                 <div key={s.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span className={cn("inline-block size-2 rounded-full", dotClass(st))} />
-                    <span>{sessionLabel(s.start_time)}</span>
+                    <span>{sessionLabel(s.start_time, t)}</span>
                     <span className="text-muted-foreground text-xs">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
                   </div>
                   <span>{statusLabel(st)}</span>
