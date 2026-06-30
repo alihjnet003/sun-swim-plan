@@ -24,7 +24,7 @@ interface PublicSlot {
   start_time: string;
   end_time: string;
   is_closed: boolean;
-  bookings: { id: string }[] | null;
+  bookings: { id: string }[] | { id: string } | null;
 }
 
 type Status = "available" | "booked" | "closed";
@@ -73,9 +73,15 @@ const T = {
   },
 } as const;
 
+function hasBooking(b: PublicSlot["bookings"]): boolean {
+  if (!b) return false;
+  if (Array.isArray(b)) return b.length > 0;
+  return !!(b as { id?: string }).id;
+}
+
 function statusOf(s: PublicSlot): Status {
   if (s.is_closed) return "closed";
-  if (s.bookings && s.bookings.length > 0) return "booked";
+  if (hasBooking(s.bookings)) return "booked";
   return "available";
 }
 
