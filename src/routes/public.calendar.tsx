@@ -249,10 +249,10 @@ function PublicCalendarPage() {
         _slot_ids: pickedSlots.map((s) => s.id),
         _customer_name: bookForm.name.trim(),
         _phone: bookForm.phone.trim(),
-        _whatsapp: bookForm.whatsapp.trim() || null,
-        _email: null,
+        _whatsapp: bookForm.whatsapp.trim() || undefined,
+        _email: undefined,
         _people_count: bookForm.people,
-        _notes: bookForm.notes.trim() || null,
+        _notes: bookForm.notes.trim() || undefined,
       });
       if (error) throw error;
       toast.success(t.bookingSuccess);
