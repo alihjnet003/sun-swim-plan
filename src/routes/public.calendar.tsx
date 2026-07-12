@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, MessageCircle, Languages } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Languages, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicHolidays } from "@/hooks/usePublicHolidays";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/public/calendar")({
   component: PublicCalendarPage,
@@ -24,6 +29,7 @@ interface PublicSlot {
   start_time: string;
   end_time: string;
   is_closed: boolean;
+  price: number | string | null;
   bookings: { id: string }[] | { id: string } | null;
 }
 
@@ -50,6 +56,21 @@ const T = {
     evening: "الجلسة المسائية",
     night: "الجلسة الليلية",
     langToggle: "EN",
+    bookMulti: "احجز عدة فترات متتالية",
+    selectSlots: "اختر الفترات المتتالية",
+    yourInfo: "بيانات الحجز",
+    name: "الاسم الكامل",
+    phone: "رقم الهاتف",
+    whatsappField: "واتساب (اختياري)",
+    people: "عدد الأشخاص",
+    notesField: "ملاحظات (اختياري)",
+    confirmBooking: "تأكيد الحجز",
+    cancel: "إلغاء",
+    total: "المجموع",
+    bookingSuccess: "تم إرسال الحجز! سنتواصل معكم قريباً",
+    selectAtLeastOne: "اختر فترة واحدة على الأقل",
+    notConsecutive: "يجب اختيار فترات متتالية",
+    nameRequired: "الاسم ورقم الهاتف مطلوبان",
   },
   en: {
     subtitle: "Private Resort — Public Calendar",
@@ -70,6 +91,21 @@ const T = {
     evening: "Evening session",
     night: "Night session",
     langToggle: "العربية",
+    bookMulti: "Book several consecutive slots",
+    selectSlots: "Select consecutive slots",
+    yourInfo: "Your details",
+    name: "Full name",
+    phone: "Phone number",
+    whatsappField: "WhatsApp (optional)",
+    people: "People",
+    notesField: "Notes (optional)",
+    confirmBooking: "Confirm booking",
+    cancel: "Cancel",
+    total: "Total",
+    bookingSuccess: "Booking submitted! We'll contact you soon.",
+    selectAtLeastOne: "Select at least one slot",
+    notConsecutive: "Slots must be consecutive",
+    nameRequired: "Name and phone are required",
   },
 } as const;
 
@@ -127,7 +163,7 @@ function PublicCalendarPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("booking_slots")
-        .select("id, date, start_time, end_time, is_closed, bookings(id)")
+        .select("id, date, start_time, end_time, is_closed, price, bookings(id)")
         .gte("date", first)
         .lte("date", last)
         .order("start_time");
@@ -170,6 +206,67 @@ function PublicCalendarPage() {
 
   const todayKey = toKey(new Date());
   const selectedSlots = selectedDay ? (byDate[selectedDay] ?? []) : [];
+  const availableSlotsSorted = useMemo(
+    () => selectedSlots.filter((s) => statusOf(s) === "available").sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    [selectedSlots],
+  );
+
+  // Multi-slot booking state
+  const [pickedSlotIds, setPickedSlotIds] = useState<string[]>([]);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [bookForm, setBookForm] = useState({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
+
+  useEffect(() => { setPickedSlotIds([]); }, [selectedDay]);
+
+  const pickedSlots = useMemo(
+    () => availableSlotsSorted.filter((s) => pickedSlotIds.includes(s.id)),
+    [availableSlotsSorted, pickedSlotIds],
+  );
+  const pickedTotal = useMemo(
+    () => pickedSlots.reduce((sum, s) => sum + Number(s.price ?? 0), 0),
+    [pickedSlots],
+  );
+
+  function togglePick(id: string) {
+    setPickedSlotIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+
+  function areConsecutive(ss: PublicSlot[]) {
+    for (let i = 1; i < ss.length; i++) {
+      if (ss[i].start_time !== ss[i - 1].end_time) return false;
+    }
+    return true;
+  }
+
+  async function submitBooking() {
+    if (pickedSlots.length === 0) { toast.error(t.selectAtLeastOne); return; }
+    if (!areConsecutive(pickedSlots)) { toast.error(t.notConsecutive); return; }
+    if (!bookForm.name.trim() || !bookForm.phone.trim()) { toast.error(t.nameRequired); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.rpc("public_book_consecutive_slots", {
+        _slot_ids: pickedSlots.map((s) => s.id),
+        _customer_name: bookForm.name.trim(),
+        _phone: bookForm.phone.trim(),
+        _whatsapp: bookForm.whatsapp.trim() || undefined,
+        _email: undefined,
+        _people_count: bookForm.people,
+        _notes: bookForm.notes.trim() || undefined,
+      });
+      if (error) throw error;
+      toast.success(t.bookingSuccess);
+      setBookingOpen(false);
+      setPickedSlotIds([]);
+      setBookForm({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
+      setSelectedDay(null);
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const statusLabel = (st: Status) =>
     st === "available" ? t.statusAvailable : st === "booked" ? t.statusBooked : t.statusClosed;
@@ -269,20 +366,101 @@ function PublicCalendarPage() {
             )}
             {selectedSlots.map((s) => {
               const st = statusOf(s);
+              const isPicked = pickedSlotIds.includes(s.id);
+              const canPick = st === "available";
               return (
-                <div key={s.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2">
+                <div
+                  key={s.id}
+                  className={cn(
+                    "flex items-center justify-between rounded-md border px-3 py-2 text-sm gap-2",
+                    isPicked && "border-primary bg-primary/5",
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {canPick && (
+                      <Checkbox
+                        checked={isPicked}
+                        onCheckedChange={() => togglePick(s.id)}
+                        aria-label="pick slot"
+                      />
+                    )}
                     <span className={cn("inline-block size-2 rounded-full", dotClass(st))} />
-                    <span>{sessionLabel(s.start_time, t)}</span>
-                    <span className="text-muted-foreground text-xs">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
+                    <span className="truncate">{sessionLabel(s.start_time, t)}</span>
+                    <span className="text-muted-foreground text-xs whitespace-nowrap">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
                   </div>
-                  <span>{statusLabel(st)}</span>
+                  <span className="text-xs whitespace-nowrap">{statusLabel(st)}</span>
                 </div>
               );
             })}
+            {availableSlotsSorted.length > 0 && (
+              <div className="pt-3 border-t space-y-2">
+                {pickedSlots.length > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    {t.total}: <span className="font-semibold text-foreground">{pickedTotal.toFixed(3)} BHD</span>
+                    {" · "}
+                    {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                  </div>
+                )}
+                <Button
+                  className="w-full"
+                  disabled={pickedSlots.length === 0}
+                  onClick={() => {
+                    if (!areConsecutive(pickedSlots)) { toast.error(t.notConsecutive); return; }
+                    setBookingOpen(true);
+                  }}
+                >
+                  {t.bookMulti}
+                </Button>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
+        <DialogContent dir={dir}>
+          <DialogHeader>
+            <DialogTitle>{t.yourInfo}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {pickedSlots.length > 0 && (
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                {" · "}
+                <span className="font-semibold">{pickedTotal.toFixed(3)} BHD</span>
+              </div>
+            )}
+            <div>
+              <Label>{t.name} *</Label>
+              <Input value={bookForm.name} onChange={(e) => setBookForm({ ...bookForm, name: e.target.value })} />
+            </div>
+            <div>
+              <Label>{t.phone} *</Label>
+              <Input value={bookForm.phone} onChange={(e) => setBookForm({ ...bookForm, phone: e.target.value })} />
+            </div>
+            <div>
+              <Label>{t.whatsappField}</Label>
+              <Input value={bookForm.whatsapp} onChange={(e) => setBookForm({ ...bookForm, whatsapp: e.target.value })} />
+            </div>
+            <div>
+              <Label>{t.people}</Label>
+              <Input type="number" min={1} value={bookForm.people}
+                onChange={(e) => setBookForm({ ...bookForm, people: Math.max(1, Number(e.target.value)) })} />
+            </div>
+            <div>
+              <Label>{t.notesField}</Label>
+              <Input value={bookForm.notes} onChange={(e) => setBookForm({ ...bookForm, notes: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBookingOpen(false)} disabled={submitting}>{t.cancel}</Button>
+            <Button onClick={submitBooking} disabled={submitting}>
+              {submitting && <Loader2 className="size-4 mr-2 animate-spin" />}
+              {t.confirmBooking}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
