@@ -121,6 +121,8 @@ export type Database = {
           booking_status: Database["public"]["Enums"]["booking_status"]
           created_at: string
           created_by: string | null
+          custom_end_time: string | null
+          custom_start_time: string | null
           customer_id: string
           deposit_amount: number
           discount: number
@@ -140,6 +142,8 @@ export type Database = {
           booking_status?: Database["public"]["Enums"]["booking_status"]
           created_at?: string
           created_by?: string | null
+          custom_end_time?: string | null
+          custom_start_time?: string | null
           customer_id: string
           deposit_amount?: number
           discount?: number
@@ -159,6 +163,8 @@ export type Database = {
           booking_status?: Database["public"]["Enums"]["booking_status"]
           created_at?: string
           created_by?: string | null
+          custom_end_time?: string | null
+          custom_start_time?: string | null
           customer_id?: string
           deposit_amount?: number
           discount?: number
@@ -352,6 +358,27 @@ export type Database = {
         Returns: boolean
       }
       is_staff_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      public_book_consecutive_slots: {
+        Args: {
+          _customer_name: string
+          _email?: string
+          _notes?: string
+          _people_count?: number
+          _phone: string
+          _slot_ids: string[]
+          _whatsapp?: string
+        }
+        Returns: Json
+      }
+      resolve_booking_slot_overlaps: {
+        Args: {
+          _booking_id: string
+          _decisions?: Json
+          _end: string
+          _start: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "staff"
