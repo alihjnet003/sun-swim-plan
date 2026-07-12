@@ -163,7 +163,7 @@ function PublicCalendarPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("booking_slots")
-        .select("id, date, start_time, end_time, is_closed, bookings(id)")
+        .select("id, date, start_time, end_time, is_closed, price, bookings(id)")
         .gte("date", first)
         .lte("date", last)
         .order("start_time");
