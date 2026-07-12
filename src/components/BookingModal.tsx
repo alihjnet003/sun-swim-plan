@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
@@ -14,9 +15,16 @@ import { Loader2 } from "lucide-react";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  slot?: Slot | null;        // when creating from calendar
-  booking?: BookingWithRelations | null; // when editing
+  slot?: Slot | null;
+  booking?: BookingWithRelations | null;
 }
+
+// Normalise DB time (HH:MM:SS or HH:MM) → HH:MM for <input type="time">
+const toHM = (t?: string | null) => (t ? t.slice(0, 5) : "");
+// Normalise HH:MM → HH:MM:00 for Postgres time
+const toDbTime = (t: string) => (t.length === 5 ? `${t}:00` : t);
+
+type Conflict = { slot_id: string; start_time: string; end_time: string; coverage: string };
 
 export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const { data: customers = [] } = useCustomers();
@@ -33,6 +41,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
     email: "",
     customer_notes: "",
     slot_id: "",
+    start_time: "",
+    end_time: "",
     booking_status: "new" as "new" | "confirmed" | "completed" | "cancelled",
     subtotal: 0,
     discount: 0,
@@ -41,6 +51,11 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
     people_count: 1,
     notes: "",
   });
+
+  // Overlap-resolution dialog state
+  const [conflicts, setConflicts] = useState<Conflict[] | null>(null);
+  const [decisions, setDecisions] = useState<Record<string, "delete" | "shrink">>({});
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (booking) {
@@ -53,6 +68,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         email: "",
         customer_notes: "",
         slot_id: booking.slot_id,
+        start_time: toHM(booking.custom_start_time ?? booking.slot?.start_time),
+        end_time: toHM(booking.custom_end_time ?? booking.slot?.end_time),
         booking_status: booking.booking_status,
         subtotal: Number(booking.subtotal),
         discount: Number(booking.discount),
@@ -62,7 +79,15 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         notes: booking.notes ?? "",
       });
     } else if (slot) {
-      setForm((f) => ({ ...f, slot_id: slot.id, subtotal: Number(slot.price), customer_id: "", new_customer: customers.length === 0 }));
+      setForm((f) => ({
+        ...f,
+        slot_id: slot.id,
+        start_time: toHM(slot.start_time),
+        end_time: toHM(slot.end_time),
+        subtotal: Number(slot.price),
+        customer_id: "",
+        new_customer: customers.length === 0,
+      }));
     }
   }, [booking, slot, customers.length, open]);
 
@@ -73,8 +98,33 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const targetSlot =
     availableSlots.find((s) => s.id === form.slot_id) ?? booking?.slot ?? slot ?? null;
 
+  // Called when times differ from the underlying slot; resolves overlaps via RPC.
+  async function applyTimeExtension(bookingId: string, extraDecisions?: Record<string, "delete" | "shrink">) {
+    const { data, error } = await supabase.rpc("resolve_booking_slot_overlaps", {
+      _booking_id: bookingId,
+      _start: toDbTime(form.start_time),
+      _end: toDbTime(form.end_time),
+      _decisions: (extraDecisions ?? {}) as any,
+    });
+    if (error) throw error;
+    const res = data as { ok?: boolean; conflicts?: Conflict[] };
+    if (res?.conflicts && res.conflicts.length > 0) {
+      const init: Record<string, "delete" | "shrink"> = {};
+      res.conflicts.forEach((c) => { init[c.slot_id] = "shrink"; });
+      setDecisions(init);
+      setConflicts(res.conflicts);
+      setPendingBookingId(bookingId);
+      return false;
+    }
+    return true;
+  }
+
   async function handleSave() {
     if (!targetSlot) return;
+    if (!form.start_time || !form.end_time || form.end_time <= form.start_time) {
+      toast.error("End time must be after start time");
+      return;
+    }
     setSaving(true);
     try {
       let customerId = form.customer_id;
@@ -120,10 +170,17 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         notes: form.notes || null,
       };
 
+      const slotStart = toHM(targetSlot.start_time);
+      const slotEnd = toHM(targetSlot.end_time);
+      const timesChanged = form.start_time !== slotStart || form.end_time !== slotEnd;
+
+      let bookingId: string;
+
       if (booking) {
         const prevPaid = Number(booking.paid_amount);
         const { error } = await supabase.from("bookings").update(payload).eq("id", booking.id);
         if (error) throw error;
+        bookingId = booking.id;
         await supabase.from("audit_logs").insert({ booking_id: booking.id, action: "updated", details: payload as any });
         if (form.paid_amount !== prevPaid) {
           const delta = form.paid_amount - prevPaid;
@@ -134,7 +191,6 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
             notes: `Paid amount changed from ${prevPaid.toFixed(2)} to ${form.paid_amount.toFixed(2)}`,
           });
         }
-        toast.success("Booking updated");
       } else {
         const { data, error } = await supabase
           .from("bookings")
@@ -147,6 +203,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
           setSaving(false);
           return;
         }
+        bookingId = data.id;
         await supabase.from("audit_logs").insert({ booking_id: data.id, action: "created", details: payload as any });
         if (form.paid_amount > 0) {
           await supabase.from("payments").insert({
@@ -156,8 +213,18 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
             notes: "Initial payment",
           });
         }
-        toast.success("Booking created");
       }
+
+      if (timesChanged) {
+        const done = await applyTimeExtension(bookingId);
+        if (!done) {
+          // Conflict dialog is now open; keep modal open until resolved.
+          setSaving(false);
+          return;
+        }
+      }
+
+      toast.success(booking ? "Booking updated" : "Booking created");
       invalidate();
       onOpenChange(false);
     } catch (e: any) {
@@ -167,7 +234,27 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
     }
   }
 
+  async function resolveConflicts() {
+    if (!pendingBookingId) return;
+    setSaving(true);
+    try {
+      const done = await applyTimeExtension(pendingBookingId, decisions);
+      if (done) {
+        toast.success("Booking updated");
+        setConflicts(null);
+        setPendingBookingId(null);
+        invalidate();
+        onOpenChange(false);
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to resolve overlaps");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -237,7 +324,13 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                 <Label>Slot (date &amp; time)</Label>
                 <Select value={form.slot_id} onValueChange={(v) => {
                   const s = availableSlots.find((x) => x.id === v);
-                  setForm((f) => ({ ...f, slot_id: v, subtotal: s ? Number(s.price) : f.subtotal }));
+                  setForm((f) => ({
+                    ...f,
+                    slot_id: v,
+                    subtotal: s ? Number(s.price) : f.subtotal,
+                    start_time: s ? toHM(s.start_time) : f.start_time,
+                    end_time: s ? toHM(s.end_time) : f.end_time,
+                  }));
                 }}>
                   <SelectTrigger><SelectValue placeholder="Choose a slot" /></SelectTrigger>
                   <SelectContent>
@@ -249,6 +342,21 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Start time</Label>
+                  <Input type="time" value={form.start_time}
+                    onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+                </div>
+                <div>
+                  <Label>End time</Label>
+                  <Input type="time" value={form.end_time}
+                    onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Extending the times will automatically adjust or remove other slots on the same day.
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>People</Label>
@@ -326,5 +434,50 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Overlap resolution dialog */}
+    <Dialog open={!!conflicts} onOpenChange={(o) => { if (!o) { setConflicts(null); setPendingBookingId(null); } }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Overlapping slots</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            The new booking time overlaps these existing slots. Choose what to do with each.
+          </p>
+        </DialogHeader>
+        <div className="space-y-3">
+          {conflicts?.map((c) => (
+            <div key={c.slot_id} className="rounded-md border p-3">
+              <div className="text-sm font-medium mb-2">
+                Slot {c.start_time} – {c.end_time}
+              </div>
+              <RadioGroup
+                value={decisions[c.slot_id] ?? "shrink"}
+                onValueChange={(v) => setDecisions((d) => ({ ...d, [c.slot_id]: v as "delete" | "shrink" }))}
+                className="flex gap-4"
+              >
+                <label className="flex items-center gap-2 text-sm">
+                  <RadioGroupItem value="shrink" id={`shrink-${c.slot_id}`} />
+                  Shrink (keep leftover time)
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <RadioGroupItem value="delete" id={`delete-${c.slot_id}`} />
+                  Delete slot
+                </label>
+              </RadioGroup>
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setConflicts(null); setPendingBookingId(null); }} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={resolveConflicts} disabled={saving}>
+            {saving && <Loader2 className="size-4 mr-2 animate-spin" />}
+            Apply
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
