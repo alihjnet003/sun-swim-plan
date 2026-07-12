@@ -366,20 +366,101 @@ function PublicCalendarPage() {
             )}
             {selectedSlots.map((s) => {
               const st = statusOf(s);
+              const isPicked = pickedSlotIds.includes(s.id);
+              const canPick = st === "available";
               return (
-                <div key={s.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2">
+                <div
+                  key={s.id}
+                  className={cn(
+                    "flex items-center justify-between rounded-md border px-3 py-2 text-sm gap-2",
+                    isPicked && "border-primary bg-primary/5",
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {canPick && (
+                      <Checkbox
+                        checked={isPicked}
+                        onCheckedChange={() => togglePick(s.id)}
+                        aria-label="pick slot"
+                      />
+                    )}
                     <span className={cn("inline-block size-2 rounded-full", dotClass(st))} />
-                    <span>{sessionLabel(s.start_time, t)}</span>
-                    <span className="text-muted-foreground text-xs">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
+                    <span className="truncate">{sessionLabel(s.start_time, t)}</span>
+                    <span className="text-muted-foreground text-xs whitespace-nowrap">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
                   </div>
-                  <span>{statusLabel(st)}</span>
+                  <span className="text-xs whitespace-nowrap">{statusLabel(st)}</span>
                 </div>
               );
             })}
+            {availableSlotsSorted.length > 0 && (
+              <div className="pt-3 border-t space-y-2">
+                {pickedSlots.length > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    {t.total}: <span className="font-semibold text-foreground">{pickedTotal.toFixed(3)} BHD</span>
+                    {" · "}
+                    {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                  </div>
+                )}
+                <Button
+                  className="w-full"
+                  disabled={pickedSlots.length === 0}
+                  onClick={() => {
+                    if (!areConsecutive(pickedSlots)) { toast.error(t.notConsecutive); return; }
+                    setBookingOpen(true);
+                  }}
+                >
+                  {t.bookMulti}
+                </Button>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
+        <DialogContent dir={dir}>
+          <DialogHeader>
+            <DialogTitle>{t.yourInfo}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {pickedSlots.length > 0 && (
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                {" · "}
+                <span className="font-semibold">{pickedTotal.toFixed(3)} BHD</span>
+              </div>
+            )}
+            <div>
+              <Label>{t.name} *</Label>
+              <Input value={bookForm.name} onChange={(e) => setBookForm({ ...bookForm, name: e.target.value })} />
+            </div>
+            <div>
+              <Label>{t.phone} *</Label>
+              <Input value={bookForm.phone} onChange={(e) => setBookForm({ ...bookForm, phone: e.target.value })} />
+            </div>
+            <div>
+              <Label>{t.whatsappField}</Label>
+              <Input value={bookForm.whatsapp} onChange={(e) => setBookForm({ ...bookForm, whatsapp: e.target.value })} />
+            </div>
+            <div>
+              <Label>{t.people}</Label>
+              <Input type="number" min={1} value={bookForm.people}
+                onChange={(e) => setBookForm({ ...bookForm, people: Math.max(1, Number(e.target.value)) })} />
+            </div>
+            <div>
+              <Label>{t.notesField}</Label>
+              <Input value={bookForm.notes} onChange={(e) => setBookForm({ ...bookForm, notes: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBookingOpen(false)} disabled={submitting}>{t.cancel}</Button>
+            <Button onClick={submitBooking} disabled={submitting}>
+              {submitting && <Loader2 className="size-4 mr-2 animate-spin" />}
+              {t.confirmBooking}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
