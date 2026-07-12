@@ -29,6 +29,7 @@ interface PublicSlot {
   start_time: string;
   end_time: string;
   is_closed: boolean;
+  price: number | string | null;
   bookings: { id: string }[] | { id: string } | null;
 }
 
