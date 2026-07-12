@@ -206,12 +206,67 @@ function PublicCalendarPage() {
 
   const todayKey = toKey(new Date());
   const selectedSlots = selectedDay ? (byDate[selectedDay] ?? []) : [];
+  const availableSlotsSorted = useMemo(
+    () => selectedSlots.filter((s) => statusOf(s) === "available").sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    [selectedSlots],
+  );
 
-  const statusLabel = (st: Status) =>
-    st === "available" ? t.statusAvailable : st === "booked" ? t.statusBooked : t.statusClosed;
+  // Multi-slot booking state
+  const [pickedSlotIds, setPickedSlotIds] = useState<string[]>([]);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [bookForm, setBookForm] = useState({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
 
-  const PrevIcon = lang === "ar" ? ChevronRight : ChevronLeft;
-  const NextIcon = lang === "ar" ? ChevronLeft : ChevronRight;
+  useEffect(() => { setPickedSlotIds([]); }, [selectedDay]);
+
+  const pickedSlots = useMemo(
+    () => availableSlotsSorted.filter((s) => pickedSlotIds.includes(s.id)),
+    [availableSlotsSorted, pickedSlotIds],
+  );
+  const pickedTotal = useMemo(
+    () => pickedSlots.reduce((sum, s) => sum + Number(s.price ?? 0), 0),
+    [pickedSlots],
+  );
+
+  function togglePick(id: string) {
+    setPickedSlotIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+
+  function areConsecutive(ss: PublicSlot[]) {
+    for (let i = 1; i < ss.length; i++) {
+      if (ss[i].start_time !== ss[i - 1].end_time) return false;
+    }
+    return true;
+  }
+
+  async function submitBooking() {
+    if (pickedSlots.length === 0) { toast.error(t.selectAtLeastOne); return; }
+    if (!areConsecutive(pickedSlots)) { toast.error(t.notConsecutive); return; }
+    if (!bookForm.name.trim() || !bookForm.phone.trim()) { toast.error(t.nameRequired); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.rpc("public_book_consecutive_slots", {
+        _slot_ids: pickedSlots.map((s) => s.id),
+        _customer_name: bookForm.name.trim(),
+        _phone: bookForm.phone.trim(),
+        _whatsapp: bookForm.whatsapp.trim() || null,
+        _email: null,
+        _people_count: bookForm.people,
+        _notes: bookForm.notes.trim() || null,
+      });
+      if (error) throw error;
+      toast.success(t.bookingSuccess);
+      setBookingOpen(false);
+      setPickedSlotIds([]);
+      setBookForm({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
+      setSelectedDay(null);
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div dir={dir} className="min-h-screen bg-background text-foreground">
