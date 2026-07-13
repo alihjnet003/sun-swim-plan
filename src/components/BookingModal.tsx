@@ -24,7 +24,7 @@ const toHM = (t?: string | null) => (t ? t.slice(0, 5) : "");
 // Normalise HH:MM → HH:MM:00 for Postgres time
 const toDbTime = (t: string) => (t.length === 5 ? `${t}:00` : t);
 
-type Conflict = { slot_id: string; start_time: string; end_time: string; coverage: string };
+type Conflict = { slot_id: string; date?: string; start_time: string; end_time: string; coverage: string };
 
 export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const { data: customers = [] } = useCustomers();
