@@ -389,6 +389,11 @@ function PublicCalendarPage() {
                 🟡 {holidays[selectedDay].localName}
               </div>
             )}
+            {selectedDay && overnightByDate[selectedDay] && (
+              <div className="rounded-md border bg-amber-500/10 border-amber-500/30 px-3 py-2 text-sm">
+                🌙 {lang === "ar" ? `محجوز من اليوم السابق حتى ${overnightByDate[selectedDay].end_time}` : `Reserved from the previous day until ${overnightByDate[selectedDay].end_time}`}
+              </div>
+            )}
             {selectedSlots.length === 0 && (
               <p className="text-muted-foreground text-sm text-center py-4">{t.noSessions}</p>
             )}
