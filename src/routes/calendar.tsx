@@ -18,7 +18,7 @@ import { BookingModal } from "@/components/BookingModal";
 import {
   useBookingsForMonth, useSlotsForMonth,
   type BookingWithRelations, type Slot,
-  useInvalidateAll,
+  useInvalidateAll, useOvernightInbound,
 } from "@/lib/queries";
 import { usePublicHolidays } from "@/hooks/usePublicHolidays";
 import { supabase } from "@/integrations/supabase/client";
