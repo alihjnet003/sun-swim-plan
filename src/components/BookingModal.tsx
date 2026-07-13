@@ -460,6 +460,11 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
             <div key={c.slot_id} className="rounded-md border p-3">
               <div className="text-sm font-medium mb-2">
                 Slot {c.start_time} – {c.end_time}
+                {c.date && targetSlot && c.date !== targetSlot.date && (
+                  <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                    · اليوم التالي (next day, {fmtDate(c.date)})
+                  </span>
+                )}
               </div>
               <RadioGroup
                 value={decisions[c.slot_id] ?? "shrink"}
