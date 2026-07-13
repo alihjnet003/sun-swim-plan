@@ -285,6 +285,17 @@ function CalendarPage() {
                   <span className="md:hidden absolute top-1 left-1 size-1.5 rounded-full bg-amber-500" aria-label={holiday.localName || holiday.name} />
                 )}
 
+                {/* Overnight carry-in band */}
+                {key && overnightByDate.get(key) && (() => {
+                  const ob = overnightByDate.get(key)!;
+                  const endT = (ob.custom_end_time ?? "").slice(0, 5);
+                  return (
+                    <div className="mb-1 rounded border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 truncate">
+                      🌙 محجوز من اليوم السابق · حتى {endT}
+                    </div>
+                  );
+                })()}
+
                 {/* Desktop: full slot cards with edit/delete buttons */}
                 <div className="hidden md:block space-y-1">
                   {daySlots.map((s) => {
