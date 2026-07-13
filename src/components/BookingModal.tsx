@@ -177,7 +177,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
 
       const slotStart = toHM(targetSlot.start_time);
       const slotEnd = toHM(targetSlot.end_time);
-      const timesChanged = form.start_time !== slotStart || form.end_time !== slotEnd;
+      const prevEndDate = booking?.end_date ?? null;
+      const timesChanged = form.start_time !== slotStart || form.end_time !== slotEnd || isOvernight || !!prevEndDate;
 
       let bookingId: string;
 
