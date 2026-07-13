@@ -174,6 +174,27 @@ function PublicCalendarPage() {
     refetchOnWindowFocus: true,
   });
 
+  // Overnight bookings that spill INTO this month from previous days.
+  const { data: overnightIn = [] } = useQuery({
+    queryKey: ["public-overnight-in", first, last],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id, end_date, custom_end_time")
+        .not("end_date", "is", null)
+        .gte("end_date", first)
+        .lte("end_date", last);
+      if (error) throw error;
+      return (data ?? []) as { id: string; end_date: string; custom_end_time: string | null }[];
+    },
+    refetchInterval: 30000,
+  });
+  const overnightByDate = useMemo(() => {
+    const map: Record<string, { end_time: string }> = {};
+    overnightIn.forEach((b) => { if (b.end_date && b.custom_end_time) map[b.end_date] = { end_time: b.custom_end_time.slice(0, 5) }; });
+    return map;
+  }, [overnightIn]);
+
   useEffect(() => {
     const channel = supabase
       .channel("public-calendar")
