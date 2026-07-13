@@ -11,6 +11,7 @@ import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRela
 import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { bookingRange, nextDay } from "@/lib/format";
 
 interface Props {
   open: boolean;
