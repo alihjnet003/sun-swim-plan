@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { fmtDate, fmtMoney, slotTimeRange } from "./format";
+import { bookingRange, fmtDate, fmtMoney, fmtTime } from "./format";
 import type { BookingWithRelations } from "./queries";
 
 export function generateInvoicePDF(b: BookingWithRelations, action: "save" | "print" = "save") {
