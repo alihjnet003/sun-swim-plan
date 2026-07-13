@@ -255,7 +255,14 @@ function PublicCalendarPage() {
 
   function areConsecutive(ss: PublicSlot[]) {
     for (let i = 1; i < ss.length; i++) {
-      if (ss[i].start_time !== ss[i - 1].end_time) return false;
+      const a = ss[i - 1], b = ss[i];
+      if (a.date === b.date && b.start_time === a.end_time) continue;
+      // allow crossing midnight: prev ends at (or near) 24:00, next is next day at 00:00
+      const nd = new Date(a.date + "T00:00:00"); nd.setDate(nd.getDate() + 1);
+      const nextIso = nd.toISOString().slice(0, 10);
+      if (b.date === nextIso && b.start_time.slice(0, 5) === "00:00" &&
+          ["23:59:59", "24:00:00", "00:00:00"].includes(a.end_time)) continue;
+      return false;
     }
     return true;
   }
