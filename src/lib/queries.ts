@@ -124,6 +124,29 @@ export function useBookingsForMonth(year: number, month: number) {
   });
 }
 
+/**
+ * Bookings whose end_date lands inside [start, end] — i.e. overnight bookings that
+ * spill INTO one of these days from the previous day. Used to render "carried over
+ * from previous day" blocks on the calendars.
+ */
+export function useOvernightInbound(start: string, end: string) {
+  return useQuery({
+    queryKey: ["bookings", "overnight-in", start, end],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select(SELECT_BOOKING)
+        .not("end_date", "is", null)
+        .gte("end_date", start)
+        .lte("end_date", end);
+      if (error) throw error;
+      return (data ?? []) as unknown as BookingWithRelations[];
+    },
+  });
+}
+
+
+
 export function useAllBookings() {
   return useQuery({
     queryKey: ["bookings", "all"],

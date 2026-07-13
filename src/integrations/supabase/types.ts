@@ -126,6 +126,7 @@ export type Database = {
           customer_id: string
           deposit_amount: number
           discount: number
+          end_date: string | null
           id: string
           notes: string | null
           paid_amount: number
@@ -147,6 +148,7 @@ export type Database = {
           customer_id: string
           deposit_amount?: number
           discount?: number
+          end_date?: string | null
           id?: string
           notes?: string | null
           paid_amount?: number
@@ -168,6 +170,7 @@ export type Database = {
           customer_id?: string
           deposit_amount?: number
           discount?: number
+          end_date?: string | null
           id?: string
           notes?: string | null
           paid_amount?: number
@@ -370,15 +373,26 @@ export type Database = {
         }
         Returns: Json
       }
-      resolve_booking_slot_overlaps: {
-        Args: {
-          _booking_id: string
-          _decisions?: Json
-          _end: string
-          _start: string
-        }
-        Returns: Json
-      }
+      resolve_booking_slot_overlaps:
+        | {
+            Args: {
+              _booking_id: string
+              _decisions?: Json
+              _end: string
+              _start: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _booking_id: string
+              _decisions?: Json
+              _end: string
+              _end_date?: string
+              _start: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       app_role: "admin" | "staff"

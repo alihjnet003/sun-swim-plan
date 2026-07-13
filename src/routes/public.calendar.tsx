@@ -174,6 +174,27 @@ function PublicCalendarPage() {
     refetchOnWindowFocus: true,
   });
 
+  // Overnight bookings that spill INTO this month from previous days.
+  const { data: overnightIn = [] } = useQuery({
+    queryKey: ["public-overnight-in", first, last],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id, end_date, custom_end_time")
+        .not("end_date", "is", null)
+        .gte("end_date", first)
+        .lte("end_date", last);
+      if (error) throw error;
+      return (data ?? []) as { id: string; end_date: string; custom_end_time: string | null }[];
+    },
+    refetchInterval: 30000,
+  });
+  const overnightByDate = useMemo(() => {
+    const map: Record<string, { end_time: string }> = {};
+    overnightIn.forEach((b) => { if (b.end_date && b.custom_end_time) map[b.end_date] = { end_time: b.custom_end_time.slice(0, 5) }; });
+    return map;
+  }, [overnightIn]);
+
   useEffect(() => {
     const channel = supabase
       .channel("public-calendar")
@@ -234,7 +255,14 @@ function PublicCalendarPage() {
 
   function areConsecutive(ss: PublicSlot[]) {
     for (let i = 1; i < ss.length; i++) {
-      if (ss[i].start_time !== ss[i - 1].end_time) return false;
+      const a = ss[i - 1], b = ss[i];
+      if (a.date === b.date && b.start_time === a.end_time) continue;
+      // allow crossing midnight: prev ends at (or near) 24:00, next is next day at 00:00
+      const nd = new Date(a.date + "T00:00:00"); nd.setDate(nd.getDate() + 1);
+      const nextIso = nd.toISOString().slice(0, 10);
+      if (b.date === nextIso && b.start_time.slice(0, 5) === "00:00" &&
+          ["23:59:59", "24:00:00", "00:00:00"].includes(a.end_time)) continue;
+      return false;
     }
     return true;
   }
@@ -359,6 +387,11 @@ function PublicCalendarPage() {
             {selectedDay && holidays[selectedDay] && (
               <div className="rounded-md border bg-amber-500/10 border-amber-500/30 px-3 py-2 text-sm">
                 🟡 {holidays[selectedDay].localName}
+              </div>
+            )}
+            {selectedDay && overnightByDate[selectedDay] && (
+              <div className="rounded-md border bg-amber-500/10 border-amber-500/30 px-3 py-2 text-sm">
+                🌙 {lang === "ar" ? `محجوز من اليوم السابق حتى ${overnightByDate[selectedDay].end_time}` : `Reserved from the previous day until ${overnightByDate[selectedDay].end_time}`}
               </div>
             )}
             {selectedSlots.length === 0 && (

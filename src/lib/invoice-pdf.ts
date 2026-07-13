@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { fmtDate, fmtMoney, slotTimeRange } from "./format";
+import { bookingRange, fmtDate, fmtMoney, fmtTime } from "./format";
 import type { BookingWithRelations } from "./queries";
 
 export function generateInvoicePDF(b: BookingWithRelations, action: "save" | "print" = "save") {
@@ -40,12 +40,20 @@ export function generateInvoicePDF(b: BookingWithRelations, action: "save" | "pr
   if (b.customer?.email) doc.text(b.customer.email, W - 90, top + 18);
 
   // Booking details table
+  const range = bookingRange(b);
+  const timeCell = range.crossesMidnight
+    ? `${fmtTime(range.startTime)} – ${fmtTime(range.endTime)} (+1)`
+    : `${fmtTime(range.startTime)} – ${fmtTime(range.endTime)}`;
+  const dateCell = range.crossesMidnight
+    ? `${fmtDate(range.startDate)} → ${fmtDate(range.endDate)}`
+    : range.startDate ? fmtDate(range.startDate) : "—";
   autoTable(doc, {
     startY: top + 28,
-    head: [["Booking Date", "Time Slot", "Guests", "Status"]],
+    head: [["Booking Date", "Time Slot", "Duration", "Guests", "Status"]],
     body: [[
-      b.slot ? fmtDate(b.slot.date) : "—",
-      b.slot ? slotTimeRange(b.slot.start_time, b.slot.end_time) : "—",
+      dateCell,
+      timeCell,
+      `${range.hours.toFixed(1)}h`,
       String(b.people_count),
       b.booking_status,
     ]],

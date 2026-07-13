@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
-import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange } from "@/lib/format";
+import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange, bookingRange, nextDay } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -24,7 +24,7 @@ const toHM = (t?: string | null) => (t ? t.slice(0, 5) : "");
 // Normalise HH:MM → HH:MM:00 for Postgres time
 const toDbTime = (t: string) => (t.length === 5 ? `${t}:00` : t);
 
-type Conflict = { slot_id: string; start_time: string; end_time: string; coverage: string };
+type Conflict = { slot_id: string; date?: string; start_time: string; end_time: string; coverage: string };
 
 export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const { data: customers = [] } = useCustomers();
@@ -98,6 +98,10 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const targetSlot =
     availableSlots.find((s) => s.id === form.slot_id) ?? booking?.slot ?? slot ?? null;
 
+  // Auto-detect overnight (end <= start)
+  const isOvernight = !!(form.start_time && form.end_time && form.end_time <= form.start_time);
+  const endDateIso = isOvernight && targetSlot ? nextDay(targetSlot.date) : null;
+
   // Called when times differ from the underlying slot; resolves overlaps via RPC.
   async function applyTimeExtension(bookingId: string, extraDecisions?: Record<string, "delete" | "shrink">) {
     const { data, error } = await supabase.rpc("resolve_booking_slot_overlaps", {
@@ -105,7 +109,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
       _start: toDbTime(form.start_time),
       _end: toDbTime(form.end_time),
       _decisions: (extraDecisions ?? {}) as any,
-    });
+      _end_date: endDateIso,
+    } as any);
     if (error) throw error;
     const res = data as { ok?: boolean; conflicts?: Conflict[] };
     if (res?.conflicts && res.conflicts.length > 0) {
@@ -121,8 +126,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
 
   async function handleSave() {
     if (!targetSlot) return;
-    if (!form.start_time || !form.end_time || form.end_time <= form.start_time) {
-      toast.error("End time must be after start time");
+    if (!form.start_time || !form.end_time) {
+      toast.error("Start and end time are required");
       return;
     }
     setSaving(true);
@@ -172,7 +177,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
 
       const slotStart = toHM(targetSlot.start_time);
       const slotEnd = toHM(targetSlot.end_time);
-      const timesChanged = form.start_time !== slotStart || form.end_time !== slotEnd;
+      const prevEndDate = booking?.end_date ?? null;
+      const timesChanged = form.start_time !== slotStart || form.end_time !== slotEnd || isOvernight || !!prevEndDate;
 
       let bookingId: string;
 
@@ -354,8 +360,13 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                     onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
                 </div>
               </div>
+              {isOvernight && endDateIso && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  🌙 ينتهي في اليوم التالي — Ends next day ({fmtDate(endDateIso)})
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
-                Extending the times will automatically adjust or remove other slots on the same day.
+                Extending the times will automatically adjust or remove other slots on the same day (and next day for overnight bookings).
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -449,6 +460,11 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
             <div key={c.slot_id} className="rounded-md border p-3">
               <div className="text-sm font-medium mb-2">
                 Slot {c.start_time} – {c.end_time}
+                {c.date && targetSlot && c.date !== targetSlot.date && (
+                  <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                    · اليوم التالي (next day, {fmtDate(c.date)})
+                  </span>
+                )}
               </div>
               <RadioGroup
                 value={decisions[c.slot_id] ?? "shrink"}
