@@ -98,6 +98,10 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const targetSlot =
     availableSlots.find((s) => s.id === form.slot_id) ?? booking?.slot ?? slot ?? null;
 
+  // Auto-detect overnight (end <= start)
+  const isOvernight = !!(form.start_time && form.end_time && form.end_time <= form.start_time);
+  const endDateIso = isOvernight && targetSlot ? nextDay(targetSlot.date) : null;
+
   // Called when times differ from the underlying slot; resolves overlaps via RPC.
   async function applyTimeExtension(bookingId: string, extraDecisions?: Record<string, "delete" | "shrink">) {
     const { data, error } = await supabase.rpc("resolve_booking_slot_overlaps", {
@@ -105,7 +109,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
       _start: toDbTime(form.start_time),
       _end: toDbTime(form.end_time),
       _decisions: (extraDecisions ?? {}) as any,
-    });
+      _end_date: endDateIso,
+    } as any);
     if (error) throw error;
     const res = data as { ok?: boolean; conflicts?: Conflict[] };
     if (res?.conflicts && res.conflicts.length > 0) {
@@ -121,8 +126,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
 
   async function handleSave() {
     if (!targetSlot) return;
-    if (!form.start_time || !form.end_time || form.end_time <= form.start_time) {
-      toast.error("End time must be after start time");
+    if (!form.start_time || !form.end_time) {
+      toast.error("Start and end time are required");
       return;
     }
     setSaving(true);
