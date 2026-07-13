@@ -360,8 +360,13 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                     onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
                 </div>
               </div>
+              {isOvernight && endDateIso && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  🌙 ينتهي في اليوم التالي — Ends next day ({fmtDate(endDateIso)})
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
-                Extending the times will automatically adjust or remove other slots on the same day.
+                Extending the times will automatically adjust or remove other slots on the same day (and next day for overnight bookings).
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
