@@ -143,6 +143,9 @@ export function useOvernightInbound(start: string, end: string) {
       return (data ?? []) as unknown as BookingWithRelations[];
     },
   });
+}
+
+
 
 export function useAllBookings() {
   return useQuery({
