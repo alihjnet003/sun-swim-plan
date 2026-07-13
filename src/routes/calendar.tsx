@@ -59,6 +59,14 @@ function CalendarPage() {
   const m = cursor.getMonth();
   const { data: slots = [] } = useSlotsForMonth(y, m);
   const { data: bookings = [] } = useBookingsForMonth(y, m);
+  const firstIso = `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const lastIso = new Date(y, m + 1, 0).toISOString().slice(0, 10);
+  const { data: overnightIn = [] } = useOvernightInbound(firstIso, lastIso);
+  const overnightByDate = useMemo(() => {
+    const map = new Map<string, BookingWithRelations>();
+    overnightIn.forEach((b) => { if (b.end_date) map.set(b.end_date, b); });
+    return map;
+  }, [overnightIn]);
   const invalidate = useInvalidateAll();
 
   const thisYearHolidays = usePublicHolidays(y);
