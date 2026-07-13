@@ -8,10 +8,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
-import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange } from "@/lib/format";
+import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange, bookingRange, nextDay } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { bookingRange, nextDay } from "@/lib/format";
 
 interface Props {
   open: boolean;
