@@ -61,6 +61,18 @@ function BookingDetails() {
     navigate({ to: "/bookings" });
   }
 
+  async function setStatus(newStatus: "confirmed" | "cancelled") {
+    if (!b) return;
+    const { error } = await supabase.from("bookings").update({ booking_status: newStatus }).eq("id", b.id);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from("audit_logs").insert({
+      booking_id: b.id,
+      action: newStatus === "confirmed" ? "public_booking_approved" : "public_booking_rejected",
+      details: {} as any,
+    });
+    toast.success(newStatus === "confirmed" ? "Booking approved" : "Booking rejected");
+  }
+
   return (
     <div className="space-y-6 max-w-5xl">
       <Link to="/bookings" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
