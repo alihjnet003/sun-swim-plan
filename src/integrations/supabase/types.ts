@@ -414,7 +414,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff"
-      booking_status: "new" | "confirmed" | "completed" | "cancelled"
+      booking_status:
+        | "new"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
+        | "pending"
       payment_status: "unpaid" | "partial" | "paid"
       reminder_channel: "email" | "whatsapp"
       reminder_status: "sent" | "pending" | "failed"
@@ -546,7 +551,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
-      booking_status: ["new", "confirmed", "completed", "cancelled"],
+      booking_status: ["new", "confirmed", "completed", "cancelled", "pending"],
       payment_status: ["unpaid", "partial", "paid"],
       reminder_channel: ["email", "whatsapp"],
       reminder_status: ["sent", "pending", "failed"],
