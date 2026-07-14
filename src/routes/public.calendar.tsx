@@ -439,7 +439,14 @@ function PublicCalendarPage() {
                 </div>
               );
             })}
-            {availableSlotsSorted.length > 0 && (
+            {!publicBookingEnabled && (
+              <div className="pt-3 border-t">
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-center">
+                  {t.bookingDisabled}
+                </div>
+              </div>
+            )}
+            {publicBookingEnabled && availableSlotsSorted.length > 0 && (
               <div className="pt-3 border-t space-y-2">
                 {pickedSlots.length > 0 && (
                   <div className="text-xs text-muted-foreground">
@@ -458,6 +465,7 @@ function PublicCalendarPage() {
                 >
                   {t.bookMulti}
                 </Button>
+                <p className="text-[11px] text-muted-foreground text-center">{t.pendingNotice}</p>
               </div>
             )}
           </div>
