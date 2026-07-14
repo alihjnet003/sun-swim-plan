@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Download, Edit, Mail, MessageSquare, Plus, Printer, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Download, Edit, Mail, MessageSquare, Plus, Printer, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
@@ -61,11 +61,36 @@ function BookingDetails() {
     navigate({ to: "/bookings" });
   }
 
+  async function setStatus(newStatus: "confirmed" | "cancelled") {
+    if (!b) return;
+    const { error } = await supabase.from("bookings").update({ booking_status: newStatus }).eq("id", b.id);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from("audit_logs").insert({
+      booking_id: b.id,
+      action: newStatus === "confirmed" ? "public_booking_approved" : "public_booking_rejected",
+      details: {} as any,
+    });
+    toast.success(newStatus === "confirmed" ? "Booking approved" : "Booking rejected");
+  }
+
   return (
     <div className="space-y-6 max-w-5xl">
       <Link to="/bookings" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4 mr-1" /> All bookings
       </Link>
+
+      {b.booking_status === "pending" && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-sm">
+            <div className="font-medium">Awaiting approval</div>
+            <div className="text-muted-foreground text-xs">Submitted from the public booking link.</div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setStatus("confirmed")}><Check className="size-4 mr-1.5" />Approve</Button>
+            <Button size="sm" variant="outline" onClick={() => setStatus("cancelled")}><X className="size-4 mr-1.5" />Reject</Button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>

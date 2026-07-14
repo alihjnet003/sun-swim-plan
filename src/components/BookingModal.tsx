@@ -43,7 +43,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
     slot_id: "",
     start_time: "",
     end_time: "",
-    booking_status: "new" as "new" | "confirmed" | "completed" | "cancelled",
+    booking_status: "new" as "new" | "confirmed" | "completed" | "cancelled" | "pending",
     subtotal: 0,
     discount: 0,
     deposit_amount: 0,
@@ -379,6 +379,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                   <Select value={form.booking_status} onValueChange={(v: any) => setForm({ ...form, booking_status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="new">New</SelectItem>
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>

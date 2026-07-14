@@ -71,6 +71,8 @@ const T = {
     selectAtLeastOne: "اختر فترة واحدة على الأقل",
     notConsecutive: "يجب اختيار فترات متتالية",
     nameRequired: "الاسم ورقم الهاتف مطلوبان",
+    bookingDisabled: "الحجز عبر الرابط متوقف حالياً. يرجى التواصل معنا على واتساب.",
+    pendingNotice: "سيتم مراجعة طلب الحجز والتواصل معكم للتأكيد.",
   },
   en: {
     subtitle: "Private Resort — Public Calendar",
@@ -106,6 +108,8 @@ const T = {
     selectAtLeastOne: "Select at least one slot",
     notConsecutive: "Slots must be consecutive",
     nameRequired: "Name and phone are required",
+    bookingDisabled: "Online booking is currently disabled. Please contact us on WhatsApp.",
+    pendingNotice: "Your request will be reviewed and we'll contact you to confirm.",
   },
 } as const;
 
@@ -194,6 +198,16 @@ function PublicCalendarPage() {
     overnightIn.forEach((b) => { if (b.end_date && b.custom_end_time) map[b.end_date] = { end_time: b.custom_end_time.slice(0, 5) }; });
     return map;
   }, [overnightIn]);
+
+  const { data: publicBookingEnabled = true } = useQuery({
+    queryKey: ["public-booking-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("public_booking_enabled").eq("id", 1).maybeSingle();
+      return data?.public_booking_enabled ?? true;
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
 
   useEffect(() => {
     const channel = supabase
@@ -425,7 +439,14 @@ function PublicCalendarPage() {
                 </div>
               );
             })}
-            {availableSlotsSorted.length > 0 && (
+            {!publicBookingEnabled && (
+              <div className="pt-3 border-t">
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-center">
+                  {t.bookingDisabled}
+                </div>
+              </div>
+            )}
+            {publicBookingEnabled && availableSlotsSorted.length > 0 && (
               <div className="pt-3 border-t space-y-2">
                 {pickedSlots.length > 0 && (
                   <div className="text-xs text-muted-foreground">
@@ -444,6 +465,7 @@ function PublicCalendarPage() {
                 >
                   {t.bookMulti}
                 </Button>
+                <p className="text-[11px] text-muted-foreground text-center">{t.pendingNotice}</p>
               </div>
             )}
           </div>

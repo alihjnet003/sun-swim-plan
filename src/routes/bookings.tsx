@@ -1,22 +1,51 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { useAllBookings, useProfilesMap } from "@/lib/queries";
 import { fmtDate, fmtMoney, slotTimeRange } from "@/lib/format";
 import { generateInvoicePDF } from "@/lib/invoice-pdf";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/bookings")({ component: BookingsList });
 
 function BookingsList() {
   const { data: bookings = [], isLoading } = useAllBookings();
   const { data: profiles } = useProfilesMap();
+  const { isAdmin } = useAuth();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [payment, setPayment] = useState("all");
+  const [publicEnabled, setPublicEnabled] = useState<boolean | null>(null);
+  const [savingSetting, setSavingSetting] = useState(false);
+
+  useEffect(() => {
+    supabase.from("app_settings").select("public_booking_enabled").eq("id", 1).maybeSingle()
+      .then(({ data }) => setPublicEnabled(data?.public_booking_enabled ?? true));
+  }, []);
+
+  async function togglePublicBooking(next: boolean) {
+    setSavingSetting(true);
+    const prev = publicEnabled;
+    setPublicEnabled(next);
+    const { error } = await supabase.from("app_settings").update({ public_booking_enabled: next, updated_at: new Date().toISOString() }).eq("id", 1);
+    setSavingSetting(false);
+    if (error) {
+      setPublicEnabled(prev);
+      toast.error(error.message);
+    } else {
+      toast.success(next ? "Public booking enabled" : "Public booking disabled");
+    }
+  }
+
+  const pendingCount = bookings.filter((b) => b.booking_status === "pending").length;
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
@@ -32,10 +61,37 @@ function BookingsList() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold">Bookings</h1>
-        <p className="text-muted-foreground text-sm">All reservations across all months</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Bookings</h1>
+          <p className="text-muted-foreground text-sm">All reservations across all months</p>
+        </div>
+        {isAdmin && publicEnabled !== null && (
+          <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2">
+            <Switch
+              id="public-booking-toggle"
+              checked={publicEnabled}
+              onCheckedChange={togglePublicBooking}
+              disabled={savingSetting}
+            />
+            <Label htmlFor="public-booking-toggle" className="text-sm cursor-pointer">
+              Public booking link
+              <span className="block text-xs text-muted-foreground">
+                {publicEnabled ? "Enabled — customers can book online" : "Disabled — link is read-only"}
+              </span>
+            </Label>
+          </div>
+        )}
       </div>
+
+      {pendingCount > 0 && (
+        <button
+          onClick={() => setStatus("pending")}
+          className="w-full text-left rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm hover:bg-amber-500/15 transition"
+        >
+          <span className="font-medium">{pendingCount}</span> booking{pendingCount === 1 ? "" : "s"} awaiting approval from the public link — click to review.
+        </button>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="relative sm:col-span-2">
@@ -46,6 +102,7 @@ function BookingsList() {
           <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="pending">Pending approval</SelectItem>
             <SelectItem value="new">New</SelectItem>
             <SelectItem value="confirmed">Confirmed</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>

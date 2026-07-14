@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 
 const bookingStyles: Record<string, string> = {
   available: "bg-success/15 text-success border-success/30",
+  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40",
   new: "bg-warning/20 text-warning-foreground border-warning/40",
   confirmed: "bg-destructive/15 text-destructive border-destructive/30",
   completed: "bg-info/15 text-info border-info/30",
