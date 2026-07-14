@@ -108,6 +108,8 @@ const T = {
     selectAtLeastOne: "Select at least one slot",
     notConsecutive: "Slots must be consecutive",
     nameRequired: "Name and phone are required",
+    bookingDisabled: "Online booking is currently disabled. Please contact us on WhatsApp.",
+    pendingNotice: "Your request will be reviewed and we'll contact you to confirm.",
   },
 } as const;
 
