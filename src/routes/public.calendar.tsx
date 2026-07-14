@@ -199,6 +199,16 @@ function PublicCalendarPage() {
     return map;
   }, [overnightIn]);
 
+  const { data: publicBookingEnabled = true } = useQuery({
+    queryKey: ["public-booking-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("public_booking_enabled").eq("id", 1).maybeSingle();
+      return data?.public_booking_enabled ?? true;
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
+
   useEffect(() => {
     const channel = supabase
       .channel("public-calendar")
