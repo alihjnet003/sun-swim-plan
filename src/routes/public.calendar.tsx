@@ -71,6 +71,8 @@ const T = {
     selectAtLeastOne: "اختر فترة واحدة على الأقل",
     notConsecutive: "يجب اختيار فترات متتالية",
     nameRequired: "الاسم ورقم الهاتف مطلوبان",
+    bookingDisabled: "الحجز عبر الرابط متوقف حالياً. يرجى التواصل معنا على واتساب.",
+    pendingNotice: "سيتم مراجعة طلب الحجز والتواصل معكم للتأكيد.",
   },
   en: {
     subtitle: "Private Resort — Public Calendar",
