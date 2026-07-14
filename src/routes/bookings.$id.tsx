@@ -79,6 +79,19 @@ function BookingDetails() {
         <ArrowLeft className="size-4 mr-1" /> All bookings
       </Link>
 
+      {b.booking_status === "pending" && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-sm">
+            <div className="font-medium">Awaiting approval</div>
+            <div className="text-muted-foreground text-xs">Submitted from the public booking link.</div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setStatus("confirmed")}><Check className="size-4 mr-1.5" />Approve</Button>
+            <Button size="sm" variant="outline" onClick={() => setStatus("cancelled")}><X className="size-4 mr-1.5" />Reject</Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Booking {b.booking_number}</h1>
