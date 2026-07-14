@@ -19,9 +19,33 @@ export const Route = createFileRoute("/bookings")({ component: BookingsList });
 function BookingsList() {
   const { data: bookings = [], isLoading } = useAllBookings();
   const { data: profiles } = useProfilesMap();
+  const { isAdmin } = useAuth();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [payment, setPayment] = useState("all");
+  const [publicEnabled, setPublicEnabled] = useState<boolean | null>(null);
+  const [savingSetting, setSavingSetting] = useState(false);
+
+  useEffect(() => {
+    supabase.from("app_settings").select("public_booking_enabled").eq("id", 1).maybeSingle()
+      .then(({ data }) => setPublicEnabled(data?.public_booking_enabled ?? true));
+  }, []);
+
+  async function togglePublicBooking(next: boolean) {
+    setSavingSetting(true);
+    const prev = publicEnabled;
+    setPublicEnabled(next);
+    const { error } = await supabase.from("app_settings").update({ public_booking_enabled: next, updated_at: new Date().toISOString() }).eq("id", 1);
+    setSavingSetting(false);
+    if (error) {
+      setPublicEnabled(prev);
+      toast.error(error.message);
+    } else {
+      toast.success(next ? "Public booking enabled" : "Public booking disabled");
+    }
+  }
+
+  const pendingCount = bookings.filter((b) => b.booking_status === "pending").length;
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
