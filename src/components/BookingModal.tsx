@@ -379,6 +379,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                   <Select value={form.booking_status} onValueChange={(v: any) => setForm({ ...form, booking_status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="new">New</SelectItem>
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
