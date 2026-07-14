@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: number
+          public_booking_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          public_booking_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          public_booking_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
