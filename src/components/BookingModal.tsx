@@ -43,7 +43,7 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
     slot_id: "",
     start_time: "",
     end_time: "",
-    booking_status: "new" as "new" | "confirmed" | "completed" | "cancelled",
+    booking_status: "new" as "new" | "confirmed" | "completed" | "cancelled" | "pending",
     subtotal: 0,
     discount: 0,
     deposit_amount: 0,
