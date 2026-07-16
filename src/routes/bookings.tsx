@@ -141,7 +141,11 @@ function BookingsList() {
               {isLoading && <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Loading…</td></tr>}
               {!isLoading && filtered.length === 0 && <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">No bookings match your filters.</td></tr>}
               {filtered.map((b) => (
-                <tr key={b.id} className="hover:bg-accent/30">
+                <tr
+                  key={b.id}
+                  className="hover:bg-accent/30 cursor-pointer"
+                  onClick={() => navigate({ to: "/bookings/$id", params: { id: b.id } })}
+                >
                   <td className="px-4 py-3">
                     <Link to="/bookings/$id" params={{ id: b.id }} className="font-medium text-primary hover:underline">{b.booking_number}</Link>
                   </td>
