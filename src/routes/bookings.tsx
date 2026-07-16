@@ -20,6 +20,7 @@ function BookingsList() {
   const { data: bookings = [], isLoading } = useAllBookings();
   const { data: profiles } = useProfilesMap();
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [payment, setPayment] = useState("all");
