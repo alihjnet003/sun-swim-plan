@@ -55,10 +55,14 @@ function BookingDetails() {
   }
 
   async function handleDelete() {
-    if (!confirm("Cancel this booking?")) return;
-    await del.mutateAsync(b!.id);
-    toast.success("Booking removed");
-    navigate({ to: "/bookings" });
+    if (!confirm("حذف هذا الحجز؟ سيتم تحرير الفترة الزمنية لتكون متاحة لحجز جديد، ولن يتم حذف الفترة نفسها.")) return;
+    try {
+      await del.mutateAsync(b!.id);
+      toast.success("تم حذف الحجز");
+      navigate({ to: "/bookings" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذر حذف الحجز");
+    }
   }
 
   async function setStatus(newStatus: "confirmed" | "cancelled") {
