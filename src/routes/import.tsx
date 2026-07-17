@@ -261,21 +261,47 @@ function ImportPage() {
           slotId = newSlot.id;
         }
 
-        /* 3. Create booking */
+        /* 3. Create booking (auto-detect overnight) */
+        const isOvernight = b.end_time <= b.start_time;
+        const endDateVal = isOvernight
+          ? (() => { const d = new Date(b.date + "T00:00:00"); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })()
+          : null;
+
         const { data: newBooking, error: bookErr } = await supabase
           .from("bookings")
           .insert({
             booking_number: `IMP-${Date.now()}-${id}`,
-            slot_id:        slotId,
-            customer_id:    customerId!,
-            booking_status: b.status === "pending" ? "new" : "confirmed",
-            subtotal:       b.total_price ?? 0,
-            paid_amount:    b.paid_amount ?? 0,
-            notes:          b.notes ?? null,
+            slot_id:          slotId,
+            customer_id:      customerId!,
+            booking_status:   b.status === "pending" ? "new" : "confirmed",
+            subtotal:         b.total_price ?? 0,
+            paid_amount:      b.paid_amount ?? 0,
+            notes:            b.notes ?? null,
+            custom_start_time: b.start_time,
+            custom_end_time:   b.end_time,
+            end_date:          endDateVal,
           })
           .select("id")
           .single();
         if (bookErr) throw bookErr;
+
+        /* 3b. Auto-adjust overlapping slots on the same day (and next day if overnight). */
+        if (newBooking?.id) {
+          let decisions: Record<string, "delete"> = {};
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const { data: res, error: rpcErr } = await supabase.rpc("resolve_booking_slot_overlaps", {
+              _booking_id: newBooking.id,
+              _start:      b.start_time,
+              _end:        b.end_time,
+              _decisions:  decisions,
+              _end_date:   endDateVal,
+            });
+            if (rpcErr) { console.warn("overlap resolve failed:", rpcErr.message); break; }
+            const conflicts = (res as any)?.conflicts as Array<{ slot_id: string }> | undefined;
+            if (!conflicts || conflicts.length === 0) break;
+            conflicts.forEach((c) => { decisions[c.slot_id] = "delete"; });
+          }
+        }
 
         /* 4. Create payment if paid */
         if ((b.paid_amount ?? 0) > 0 && newBooking?.id) {
