@@ -233,19 +233,65 @@ function ImportPage() {
           }
         }
 
-        /* 2. Find or create slot */
-        const { data: existingSlot } = await supabase
-          .from("booking_slots")
-          .select("id")
-          .eq("date", b.date)
-          .eq("start_time", b.start_time)
-          .eq("end_time", b.end_time)
-          .maybeSingle();
+        /* 2. Find or create slot — reuse an overlapping FREE slot if possible
+              to avoid adding an extra slot on top of an existing one. */
+        const bStart = b.start_time.slice(0, 5) + ":00";
+        const bEnd   = b.end_time.slice(0, 5) + ":00";
+        const isOvernightSlot = bEnd <= bStart;
 
-        let slotId: string;
-        if (existingSlot) {
-          slotId = existingSlot.id;
-        } else {
+        // Fetch all slots on that date + any that already carry into it.
+        const { data: daySlots } = await supabase
+          .from("booking_slots")
+          .select("id, start_time, end_time, bookings(id)")
+          .eq("date", b.date);
+
+        // For non-overnight bookings, an existing slot is a candidate if its
+        // window overlaps [bStart, bEnd). For overnight we only try exact match
+        // and otherwise create.
+        const toMin = (t: string) => {
+          const [h, m] = t.split(":").map(Number);
+          return h * 60 + (m || 0);
+        };
+        const bS = toMin(bStart);
+        const bE = toMin(bEnd);
+
+        let slotId: string | null = null;
+
+        // 2a. Exact match first (free or not — conflict handled earlier).
+        const exact = (daySlots ?? []).find(
+          (s: any) => s.start_time === bStart && s.end_time === bEnd
+        );
+        if (exact) {
+          slotId = exact.id as string;
+        } else if (!isOvernightSlot) {
+          // 2b. Reuse a free overlapping slot and adjust its window.
+          const overlaps = (daySlots ?? []).filter((s: any) => {
+            const sS = toMin(s.start_time);
+            const sE = toMin(s.end_time);
+            const overnight = sE <= sS;
+            if (overnight) return false;
+            return sS < bE && sE > bS;
+          });
+          const freeOverlap = overlaps.find(
+            (s: any) => !s.bookings || (Array.isArray(s.bookings) ? s.bookings.length === 0 : false)
+          );
+          if (freeOverlap) {
+            const { error: updErr } = await supabase
+              .from("booking_slots")
+              .update({
+                start_time: bStart,
+                end_time:   bEnd,
+                label:      b.session,
+                price:      b.total_price ?? (freeOverlap as any).price ?? 0,
+              })
+              .eq("id", (freeOverlap as any).id);
+            if (updErr) throw updErr;
+            slotId = (freeOverlap as any).id as string;
+          }
+        }
+
+        // 2c. Otherwise create a new slot.
+        if (!slotId) {
           const { data: newSlot, error: slotErr } = await supabase
             .from("booking_slots")
             .insert({
