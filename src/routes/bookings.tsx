@@ -154,7 +154,7 @@ function BookingsList() {
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Payment</th>
                 <th className="text-left px-4 py-3">Created by</th>
-                <th className="text-right px-4 py-3 w-12"></th>
+                <th className="text-right px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -167,7 +167,7 @@ function BookingsList() {
                   onClick={() => navigate({ to: "/bookings/$id", params: { id: b.id } })}
                 >
                   <td className="px-4 py-3">
-                    <Link to="/bookings/$id" params={{ id: b.id }} className="font-medium text-primary hover:underline">{b.booking_number}</Link>
+                    <Link to="/bookings/$id" params={{ id: b.id }} className="font-medium text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{b.booking_number}</Link>
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium">{b.customer?.full_name}</div>
@@ -186,15 +186,51 @@ function BookingsList() {
                   <td className="px-4 py-3 text-xs text-muted-foreground">
                     {b.created_by ? profiles?.get(b.created_by) ?? "—" : "—"}
                   </td>
-                  <td className="px-2 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Download invoice PDF"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); generateInvoicePDF(b, "save"); }}
-                    >
-                      <Download className="size-4" />
-                    </Button>
+                  <td className="px-2 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      {b.booking_status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-8 px-2"
+                            disabled={actingId === b.id}
+                            onClick={(e) => decide(e, b.id, "confirmed")}
+                            title="Approve"
+                          >
+                            <Check className="size-4" />
+                            <span className="hidden sm:inline ml-1">Approve</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            disabled={actingId === b.id}
+                            onClick={(e) => decide(e, b.id, "cancelled")}
+                            title="Reject"
+                          >
+                            <X className="size-4" />
+                            <span className="hidden sm:inline ml-1">Reject</span>
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Download invoice PDF"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); generateInvoicePDF(b, "save"); }}
+                      >
+                        <Download className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="View details"
+                        onClick={(e) => { e.stopPropagation(); navigate({ to: "/bookings/$id", params: { id: b.id } }); }}
+                      >
+                        <ChevronRight className="size-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
