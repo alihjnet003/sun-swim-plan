@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import { Check, ChevronRight, Download, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
-import { useAllBookings, useProfilesMap } from "@/lib/queries";
+import { useAllBookings, useInvalidateAll, useProfilesMap } from "@/lib/queries";
 import { fmtDate, fmtMoney, slotTimeRange } from "@/lib/format";
 import { generateInvoicePDF } from "@/lib/invoice-pdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,11 +21,31 @@ function BookingsList() {
   const { data: profiles } = useProfilesMap();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
+  const invalidate = useInvalidateAll();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [payment, setPayment] = useState("all");
   const [publicEnabled, setPublicEnabled] = useState<boolean | null>(null);
   const [savingSetting, setSavingSetting] = useState(false);
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  async function decide(e: React.MouseEvent, id: string, next: "confirmed" | "cancelled") {
+    e.preventDefault();
+    e.stopPropagation();
+    setActingId(id);
+    const { error } = await supabase.from("bookings").update({ booking_status: next }).eq("id", id);
+    if (!error) {
+      await supabase.from("audit_logs").insert({
+        booking_id: id,
+        action: next === "confirmed" ? "public_booking_approved" : "public_booking_rejected",
+        details: {} as any,
+      });
+    }
+    setActingId(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success(next === "confirmed" ? "Booking approved" : "Booking rejected");
+    invalidate();
+  }
 
   useEffect(() => {
     supabase.from("app_settings").select("public_booking_enabled").eq("id", 1).maybeSingle()
@@ -134,7 +154,7 @@ function BookingsList() {
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Payment</th>
                 <th className="text-left px-4 py-3">Created by</th>
-                <th className="text-right px-4 py-3 w-12"></th>
+                <th className="text-right px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -147,7 +167,7 @@ function BookingsList() {
                   onClick={() => navigate({ to: "/bookings/$id", params: { id: b.id } })}
                 >
                   <td className="px-4 py-3">
-                    <Link to="/bookings/$id" params={{ id: b.id }} className="font-medium text-primary hover:underline">{b.booking_number}</Link>
+                    <Link to="/bookings/$id" params={{ id: b.id }} className="font-medium text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{b.booking_number}</Link>
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium">{b.customer?.full_name}</div>
@@ -166,15 +186,51 @@ function BookingsList() {
                   <td className="px-4 py-3 text-xs text-muted-foreground">
                     {b.created_by ? profiles?.get(b.created_by) ?? "—" : "—"}
                   </td>
-                  <td className="px-2 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Download invoice PDF"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); generateInvoicePDF(b, "save"); }}
-                    >
-                      <Download className="size-4" />
-                    </Button>
+                  <td className="px-2 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      {b.booking_status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-8 px-2"
+                            disabled={actingId === b.id}
+                            onClick={(e) => decide(e, b.id, "confirmed")}
+                            title="Approve"
+                          >
+                            <Check className="size-4" />
+                            <span className="hidden sm:inline ml-1">Approve</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            disabled={actingId === b.id}
+                            onClick={(e) => decide(e, b.id, "cancelled")}
+                            title="Reject"
+                          >
+                            <X className="size-4" />
+                            <span className="hidden sm:inline ml-1">Reject</span>
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Download invoice PDF"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); generateInvoicePDF(b, "save"); }}
+                      >
+                        <Download className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="View details"
+                        onClick={(e) => { e.stopPropagation(); navigate({ to: "/bookings/$id", params: { id: b.id } }); }}
+                      >
+                        <ChevronRight className="size-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
