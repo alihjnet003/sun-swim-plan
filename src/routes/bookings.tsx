@@ -21,11 +21,31 @@ function BookingsList() {
   const { data: profiles } = useProfilesMap();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
+  const invalidate = useInvalidateAll();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [payment, setPayment] = useState("all");
   const [publicEnabled, setPublicEnabled] = useState<boolean | null>(null);
   const [savingSetting, setSavingSetting] = useState(false);
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  async function decide(e: React.MouseEvent, id: string, next: "confirmed" | "cancelled") {
+    e.preventDefault();
+    e.stopPropagation();
+    setActingId(id);
+    const { error } = await supabase.from("bookings").update({ booking_status: next }).eq("id", id);
+    if (!error) {
+      await supabase.from("audit_logs").insert({
+        booking_id: id,
+        action: next === "confirmed" ? "public_booking_approved" : "public_booking_rejected",
+        details: {} as any,
+      });
+    }
+    setActingId(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success(next === "confirmed" ? "Booking approved" : "Booking rejected");
+    invalidate();
+  }
 
   useEffect(() => {
     supabase.from("app_settings").select("public_booking_enabled").eq("id", 1).maybeSingle()
