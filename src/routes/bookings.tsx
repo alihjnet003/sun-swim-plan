@@ -298,6 +298,7 @@ function BookingsList() {
           </table>
         </div>
       </div>
-
+    </div>
   );
+
 }
