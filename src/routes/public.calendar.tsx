@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, MessageCircle, Languages, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Languages, Loader2, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicHolidays } from "@/hooks/usePublicHolidays";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme";
+import { useTimeFormat } from "@/lib/timefmt";
+import { fmtTime } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/public/calendar")({
