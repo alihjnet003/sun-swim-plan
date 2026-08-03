@@ -418,7 +418,7 @@ function PublicCalendarPage() {
             )}
             {selectedDay && overnightByDate[selectedDay] && (
               <div className="rounded-md border bg-amber-500/10 border-amber-500/30 px-3 py-2 text-sm">
-                🌙 {lang === "ar" ? `محجوز من اليوم السابق حتى ${overnightByDate[selectedDay].end_time}` : `Reserved from the previous day until ${overnightByDate[selectedDay].end_time}`}
+                🌙 {lang === "ar" ? `محجوز من اليوم السابق حتى ${fmtTime(overnightByDate[selectedDay].end_time)}` : `Reserved from the previous day until ${fmtTime(overnightByDate[selectedDay].end_time)}`}
               </div>
             )}
             {selectedSlots.length === 0 && (
@@ -446,7 +446,7 @@ function PublicCalendarPage() {
                     )}
                     <span className={cn("inline-block size-2 rounded-full", dotClass(st))} />
                     <span className="truncate">{sessionLabel(s.start_time, t)}</span>
-                    <span className="text-muted-foreground text-xs whitespace-nowrap">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
+                    <span className="text-muted-foreground text-xs whitespace-nowrap">{fmtTime(s.start_time)} – {fmtTime(s.end_time)}</span>
                   </div>
                   <span className="text-xs whitespace-nowrap">{statusLabel(st)}</span>
                 </div>
@@ -465,7 +465,7 @@ function PublicCalendarPage() {
                   <div className="text-xs text-muted-foreground">
                     {t.total}: <span className="font-semibold text-foreground">{pickedTotal.toFixed(3)} BHD</span>
                     {" · "}
-                    {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                    {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                   </div>
                 )}
                 <Button
@@ -493,7 +493,7 @@ function PublicCalendarPage() {
           <div className="space-y-3">
             {pickedSlots.length > 0 && (
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
-                {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                 {" · "}
                 <span className="font-semibold">{pickedTotal.toFixed(3)} BHD</span>
               </div>
