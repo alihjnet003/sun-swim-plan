@@ -57,14 +57,17 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <AuthGate />
-            <Toaster richColors position="top-right" />
-          </AuthProvider>
-        </LanguageProvider>
+        <TimeFormatProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <AuthGate />
+              <Toaster richColors position="top-right" />
+            </AuthProvider>
+          </LanguageProvider>
+        </TimeFormatProvider>
       </ThemeProvider>
     </QueryClientProvider>
+
   );
 }
 
