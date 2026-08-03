@@ -156,6 +156,9 @@ function PublicCalendarPage() {
   const t = T[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
   const locale = lang === "ar" ? "ar" : "en-US";
+  const { theme, toggle: toggleTheme } = useTheme();
+  const { timeFormat, toggleTimeFormat } = useTimeFormat();
+
 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -322,11 +325,18 @@ function PublicCalendarPage() {
   return (
     <div dir={dir} className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle dark mode">
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </Button>
+          <Button variant="outline" size="sm" onClick={toggleTimeFormat} className="font-medium px-3" title="12h / 24h">
+            {timeFormat === "12" ? "12h" : "24h"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")}>
             <Languages className="size-4" /> {t.langToggle}
           </Button>
         </div>
+
 
         <header className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold">The Private Pool 🏊</h1>
