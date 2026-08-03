@@ -29,6 +29,8 @@ export function AppShell() {
   const { user, fullName, isAdmin, signOut } = useAuth();
   const { t, lang, setLang } = useT();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { timeFormat, toggleTimeFormat } = useTimeFormat();
+
 
   const nav = baseNav.filter((n) => !n.adminOnly || isAdmin);
   const initials = (fullName || user?.email || "?").slice(0, 2).toUpperCase();
