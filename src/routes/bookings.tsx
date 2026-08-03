@@ -141,7 +141,58 @@ function BookingsList() {
         </Select>
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
+      {/* Mobile cards */}
+      <div className="space-y-3 sm:hidden">
+        {isLoading && <p className="text-center text-muted-foreground py-6">Loading…</p>}
+        {!isLoading && filtered.length === 0 && <p className="text-center text-muted-foreground py-6">No bookings match your filters.</p>}
+        {filtered.map((b) => (
+          <div key={b.id} className="rounded-xl border bg-card p-4 space-y-3">
+            <div
+              className="space-y-1"
+              onClick={() => navigate({ to: "/bookings/$id", params: { id: b.id } })}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-primary">{b.booking_number}</span>
+                <BookingStatusBadge status={b.booking_status} />
+              </div>
+              <div className="text-sm font-medium">{b.customer?.full_name}</div>
+              <div className="text-xs text-muted-foreground">{b.customer?.phone}</div>
+              {b.slot && (
+                <div className="text-xs text-muted-foreground">
+                  {fmtDate(b.slot.date)} · {slotTimeRange(b.slot.start_time, b.slot.end_time)}
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm pt-1">
+                <PaymentStatusBadge status={b.payment_status} />
+                <span className="tabular-nums">{fmtMoney(b.remaining_amount)}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1 border-t">
+              {b.booking_status === "pending" && (
+                <>
+                  <Button size="sm" className="flex-1" disabled={actingId === b.id} onClick={(e) => decide(e, b.id, "confirmed")}>
+                    <Check className="size-4 mr-1" />Approve
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1" disabled={actingId === b.id} onClick={(e) => decide(e, b.id, "cancelled")}>
+                    <X className="size-4 mr-1" />Reject
+                  </Button>
+                </>
+              )}
+              <Button size="sm" variant="outline" className="mt-2 flex-1" onClick={() => navigate({ to: "/bookings/$id", params: { id: b.id } })}>
+                <ChevronRight className="size-4 mr-1" />View
+              </Button>
+              <Button size="sm" variant="outline" className="mt-2" title="Invoice PDF" onClick={() => generateInvoicePDF(b, "save")}>
+                <Download className="size-4" />
+              </Button>
+              <Button size="sm" variant="destructive" className="mt-2" title="Delete booking" disabled={del.isPending} onClick={() => removeBooking(b.id, b.booking_number)}>
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border bg-card overflow-hidden hidden sm:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
@@ -199,7 +250,7 @@ function BookingsList() {
                             title="Approve"
                           >
                             <Check className="size-4" />
-                            <span className="hidden sm:inline ml-1">Approve</span>
+                            <span className="hidden md:inline ml-1">Approve</span>
                           </Button>
                           <Button
                             size="sm"
@@ -210,7 +261,7 @@ function BookingsList() {
                             title="Reject"
                           >
                             <X className="size-4" />
-                            <span className="hidden sm:inline ml-1">Reject</span>
+                            <span className="hidden md:inline ml-1">Reject</span>
                           </Button>
                         </>
                       )}
@@ -221,6 +272,15 @@ function BookingsList() {
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); generateInvoicePDF(b, "save"); }}
                       >
                         <Download className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Delete booking (keeps the time slot)"
+                        disabled={del.isPending}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeBooking(b.id, b.booking_number); }}
+                      >
+                        <Trash2 className="size-4 text-destructive" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -238,6 +298,6 @@ function BookingsList() {
           </table>
         </div>
       </div>
-    </div>
+
   );
 }
