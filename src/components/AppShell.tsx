@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
+import { useTimeFormat } from "@/lib/timefmt";
+
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
