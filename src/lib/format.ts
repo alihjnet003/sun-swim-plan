@@ -19,12 +19,27 @@ export const fmtDateLong = (d: string | Date) => {
   return new Date(d).toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 };
 
+export type TimeFormat = "12" | "24";
+
+let _timeFormat: TimeFormat =
+  (typeof window !== "undefined" && (localStorage.getItem("time-format") as TimeFormat)) || "12";
+
+export const getTimeFormat = (): TimeFormat => _timeFormat;
+
+export const setTimeFormatValue = (f: TimeFormat) => {
+  _timeFormat = f;
+  if (typeof window !== "undefined") localStorage.setItem("time-format", f);
+};
+
 export const fmtTime = (t: string) => {
   const [h, m] = t.split(":").map(Number);
+  const mm = String(m || 0).padStart(2, "0");
+  if (_timeFormat === "24") return `${String(h).padStart(2, "0")}:${mm}`;
   const period = h >= 12 ? "PM" : "AM";
   const hh = ((h + 11) % 12) + 1;
-  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+  return `${hh}:${mm} ${period}`;
 };
+
 
 export const slotTimeRange = (start: string, end: string) =>
   `${fmtTime(start)} – ${fmtTime(end)}`;
