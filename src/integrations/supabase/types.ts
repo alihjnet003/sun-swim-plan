@@ -371,6 +371,15 @@ export type Database = {
     }
     Functions: {
       auto_close_past_slots: { Args: never; Returns: number }
+      booking_span: {
+        Args: {
+          _custom_end: string
+          _custom_start: string
+          _end_date: string
+          _slot_id: string
+        }
+        Returns: unknown
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

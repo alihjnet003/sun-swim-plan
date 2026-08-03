@@ -6,6 +6,8 @@ import { AppShell } from "@/components/AppShell";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { LanguageProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
+import { TimeFormatProvider } from "@/lib/timefmt";
+
 
 import appCss from "../styles.css?url";
 
@@ -57,14 +59,17 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <AuthGate />
-            <Toaster richColors position="top-right" />
-          </AuthProvider>
-        </LanguageProvider>
+        <TimeFormatProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <AuthGate />
+              <Toaster richColors position="top-right" />
+            </AuthProvider>
+          </LanguageProvider>
+        </TimeFormatProvider>
       </ThemeProvider>
     </QueryClientProvider>
+
   );
 }
 

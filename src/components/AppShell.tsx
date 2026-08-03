@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
+import { useTimeFormat } from "@/lib/timefmt";
+
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +29,8 @@ export function AppShell() {
   const { user, fullName, isAdmin, signOut } = useAuth();
   const { t, lang, setLang } = useT();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { timeFormat, toggleTimeFormat } = useTimeFormat();
+
 
   const nav = baseNav.filter((n) => !n.adminOnly || isAdmin);
   const initials = (fullName || user?.email || "?").slice(0, 2).toUpperCase();
@@ -86,6 +90,16 @@ export function AppShell() {
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? t("action.theme.light") : t("action.theme.dark")}>
             {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTimeFormat}
+            className="px-2 font-medium"
+            title="Switch 12h / 24h time format"
+          >
+            {timeFormat === "12" ? "12h" : "24h"}
+          </Button>
+
           <Button variant="ghost" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="gap-2">
             <Languages className="size-4" />
             <span className="hidden sm:inline">{t("action.language")}</span>

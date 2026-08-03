@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, MessageCircle, Languages, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Languages, Loader2, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicHolidays } from "@/hooks/usePublicHolidays";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme";
+import { useTimeFormat } from "@/lib/timefmt";
+import { fmtTime } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/public/calendar")({
@@ -153,6 +156,9 @@ function PublicCalendarPage() {
   const t = T[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
   const locale = lang === "ar" ? "ar" : "en-US";
+  const { theme, toggle: toggleTheme } = useTheme();
+  const { timeFormat, toggleTimeFormat } = useTimeFormat();
+
 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -319,11 +325,18 @@ function PublicCalendarPage() {
   return (
     <div dir={dir} className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle dark mode">
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </Button>
+          <Button variant="outline" size="sm" onClick={toggleTimeFormat} className="font-medium px-3" title="12h / 24h">
+            {timeFormat === "12" ? "12h" : "24h"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")}>
             <Languages className="size-4" /> {t.langToggle}
           </Button>
         </div>
+
 
         <header className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold">The Private Pool 🏊</h1>
@@ -405,7 +418,7 @@ function PublicCalendarPage() {
             )}
             {selectedDay && overnightByDate[selectedDay] && (
               <div className="rounded-md border bg-amber-500/10 border-amber-500/30 px-3 py-2 text-sm">
-                🌙 {lang === "ar" ? `محجوز من اليوم السابق حتى ${overnightByDate[selectedDay].end_time}` : `Reserved from the previous day until ${overnightByDate[selectedDay].end_time}`}
+                🌙 {lang === "ar" ? `محجوز من اليوم السابق حتى ${fmtTime(overnightByDate[selectedDay].end_time)}` : `Reserved from the previous day until ${fmtTime(overnightByDate[selectedDay].end_time)}`}
               </div>
             )}
             {selectedSlots.length === 0 && (
@@ -433,7 +446,7 @@ function PublicCalendarPage() {
                     )}
                     <span className={cn("inline-block size-2 rounded-full", dotClass(st))} />
                     <span className="truncate">{sessionLabel(s.start_time, t)}</span>
-                    <span className="text-muted-foreground text-xs whitespace-nowrap">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
+                    <span className="text-muted-foreground text-xs whitespace-nowrap">{fmtTime(s.start_time)} – {fmtTime(s.end_time)}</span>
                   </div>
                   <span className="text-xs whitespace-nowrap">{statusLabel(st)}</span>
                 </div>
@@ -452,7 +465,7 @@ function PublicCalendarPage() {
                   <div className="text-xs text-muted-foreground">
                     {t.total}: <span className="font-semibold text-foreground">{pickedTotal.toFixed(3)} BHD</span>
                     {" · "}
-                    {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                    {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                   </div>
                 )}
                 <Button
@@ -480,7 +493,7 @@ function PublicCalendarPage() {
           <div className="space-y-3">
             {pickedSlots.length > 0 && (
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
-                {pickedSlots[0].start_time.slice(0,5)}–{pickedSlots[pickedSlots.length - 1].end_time.slice(0,5)}
+                {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                 {" · "}
                 <span className="font-semibold">{pickedTotal.toFixed(3)} BHD</span>
               </div>
