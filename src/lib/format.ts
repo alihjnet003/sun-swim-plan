@@ -10,13 +10,13 @@ export const fmtMoney = (n: number | string | null | undefined) => {
 };
 
 export const fmtDate = (d: string | Date) => {
-  const locale = typeof document !== "undefined" && document.documentElement.lang === "ar" ? "ar-BH" : "en-US";
-  return new Date(d).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "ar" ? "ar-BH" : "en-GB";
+  return new Date(d).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 };
 
 export const fmtDateLong = (d: string | Date) => {
-  const locale = typeof document !== "undefined" && document.documentElement.lang === "ar" ? "ar-BH" : "en-US";
-  return new Date(d).toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const locale = typeof document !== "undefined" && document.documentElement.lang === "ar" ? "ar-BH" : "en-GB";
+  return new Date(d).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 };
 
 export type TimeFormat = "12" | "24";
