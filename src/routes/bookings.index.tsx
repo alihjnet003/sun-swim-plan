@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/bookings")({ component: BookingsList });
+export const Route = createFileRoute("/bookings/")({ component: BookingsList });
 
 function BookingsList() {
   const { data: bookings = [], isLoading } = useAllBookings();

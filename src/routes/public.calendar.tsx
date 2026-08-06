@@ -33,7 +33,7 @@ interface PublicSlot {
   end_time: string;
   is_closed: boolean;
   price: number | string | null;
-  bookings: { id: string }[] | { id: string } | null;
+  bookings: { id: string; booking_status?: string }[] | { id: string; booking_status?: string } | null;
 }
 
 type Status = "available" | "booked" | "closed";
@@ -116,10 +116,14 @@ const T = {
   },
 } as const;
 
+// A slot only counts as booked once the booking is approved. Requests coming from
+// the public link stay "pending" and must NOT reserve the slot.
+const BLOCKING = new Set(["new", "confirmed", "completed"]);
+
 function hasBooking(b: PublicSlot["bookings"]): boolean {
   if (!b) return false;
-  if (Array.isArray(b)) return b.length > 0;
-  return !!(b as { id?: string }).id;
+  const list = Array.isArray(b) ? b : [b];
+  return list.some((x) => x && x.id && BLOCKING.has(x.booking_status ?? "confirmed"));
 }
 
 function statusOf(s: PublicSlot): Status {
@@ -173,7 +177,7 @@ function PublicCalendarPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("booking_slots")
-        .select("id, date, start_time, end_time, is_closed, price, bookings(id)")
+        .select("id, date, start_time, end_time, is_closed, price, bookings(id, booking_status)")
         .gte("date", first)
         .lte("date", last)
         .order("start_time");
