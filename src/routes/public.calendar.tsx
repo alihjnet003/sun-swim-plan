@@ -116,10 +116,14 @@ const T = {
   },
 } as const;
 
+// A slot only counts as booked once the booking is approved. Requests coming from
+// the public link stay "pending" and must NOT reserve the slot.
+const BLOCKING = new Set(["new", "confirmed", "completed"]);
+
 function hasBooking(b: PublicSlot["bookings"]): boolean {
   if (!b) return false;
-  if (Array.isArray(b)) return b.length > 0;
-  return !!(b as { id?: string }).id;
+  const list = Array.isArray(b) ? b : [b];
+  return list.some((x) => x && x.id && BLOCKING.has(x.booking_status ?? "confirmed"));
 }
 
 function statusOf(s: PublicSlot): Status {
