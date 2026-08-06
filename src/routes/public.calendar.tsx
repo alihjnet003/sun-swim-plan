@@ -33,7 +33,7 @@ interface PublicSlot {
   end_time: string;
   is_closed: boolean;
   price: number | string | null;
-  bookings: { id: string }[] | { id: string } | null;
+  bookings: { id: string; booking_status?: string }[] | { id: string; booking_status?: string } | null;
 }
 
 type Status = "available" | "booked" | "closed";
