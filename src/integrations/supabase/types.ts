@@ -65,13 +65,6 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "audit_logs_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "public_overnight"
-            referencedColumns: ["id"]
-          },
         ]
       }
       backups: {
@@ -222,13 +215,6 @@ export type Database = {
             referencedRelation: "booking_slots"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "bookings_slot_id_fkey"
-            columns: ["slot_id"]
-            isOneToOne: true
-            referencedRelation: "public_slots"
-            referencedColumns: ["id"]
-          },
         ]
       }
       customers: {
@@ -297,13 +283,6 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "payments_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "public_overnight"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -363,13 +342,6 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "reminders_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "public_overnight"
-            referencedColumns: ["id"]
-          },
         ]
       }
       user_roles: {
@@ -395,66 +367,7 @@ export type Database = {
       }
     }
     Views: {
-      public_overnight: {
-        Row: {
-          end_date: string | null
-          end_time: string | null
-          id: string | null
-        }
-        Insert: {
-          end_date?: string | null
-          end_time?: string | null
-          id?: string | null
-        }
-        Update: {
-          end_date?: string | null
-          end_time?: string | null
-          id?: string | null
-        }
-        Relationships: []
-      }
-      public_settings: {
-        Row: {
-          public_booking_enabled: boolean | null
-        }
-        Insert: {
-          public_booking_enabled?: boolean | null
-        }
-        Update: {
-          public_booking_enabled?: boolean | null
-        }
-        Relationships: []
-      }
-      public_slots: {
-        Row: {
-          date: string | null
-          end_time: string | null
-          id: string | null
-          is_booked: boolean | null
-          is_closed: boolean | null
-          price: number | null
-          start_time: string | null
-        }
-        Insert: {
-          date?: string | null
-          end_time?: string | null
-          id?: string | null
-          is_booked?: never
-          is_closed?: boolean | null
-          price?: number | null
-          start_time?: string | null
-        }
-        Update: {
-          date?: string | null
-          end_time?: string | null
-          id?: string | null
-          is_booked?: never
-          is_closed?: boolean | null
-          price?: number | null
-          start_time?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       auto_close_past_slots: { Args: never; Returns: number }
