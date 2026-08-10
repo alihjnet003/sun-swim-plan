@@ -64,19 +64,22 @@ export const Route = createFileRoute("/api/public/chat")({
               price: number | string | null;
               bookings: { id: string; booking_status?: string }[] | null;
             }[];
+            const lines = rows.map((s) => {
+              const list = Array.isArray(s.bookings) ? s.bookings : s.bookings ? [s.bookings] : [];
+              const booked = list.some((b) => b && b.id && BLOCKING.has(b.booking_status ?? "confirmed"));
+              const status = s.is_closed ? "closed" : booked ? "booked" : "available";
+              const price = s.price === null ? "-" : Number(s.price).toFixed(3);
+              return `${s.date} ${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)} ${status} ${price}`;
+            });
+            const available = lines.filter((l) => l.includes(" available "));
+            const shown = available.slice(0, 40);
             return {
-              slots: rows.map((s) => {
-                const list = Array.isArray(s.bookings) ? s.bookings : s.bookings ? [s.bookings] : [];
-                const booked = list.some((b) => b && b.id && BLOCKING.has(b.booking_status ?? "confirmed"));
-                return {
-                  date: s.date,
-                  from: s.start_time.slice(0, 5),
-                  to: s.end_time.slice(0, 5),
-                  price_bhd: s.price === null ? null : Number(s.price),
-                  status: s.is_closed ? "closed" : booked ? "booked" : "available",
-                };
-              }),
+              legend: "date from-to status price_bhd",
+              available_count: available.length,
+              truncated: available.length > shown.length,
+              available: shown,
             };
+
           },
         });
 
