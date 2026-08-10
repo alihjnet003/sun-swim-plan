@@ -99,7 +99,7 @@ export function PoolChatBot({ lang }: { lang: "ar" | "en" }) {
                   </div>
                 </div>
               )}
-              {messages.map((m) => (
+              {messages.map((m, i) => (
                 <Message key={m.id} from={m.role}>
                   <MessageContent
                     className={cn(
@@ -110,9 +110,13 @@ export function PoolChatBot({ lang }: { lang: "ar" | "en" }) {
                     <MessageResponse>
                       {m.parts.map((p) => (p.type === "text" ? p.text : "")).join("")}
                     </MessageResponse>
+                    {m.role === "assistant" && i === messages.length - 1 && !busy && (
+                      <QuickActions lang={lang} />
+                    )}
                   </MessageContent>
                 </Message>
               ))}
+
               {status === "submitted" && <Shimmer className="text-sm">{t.thinking}</Shimmer>}
               {error && (
                 <p className="text-xs text-destructive">
