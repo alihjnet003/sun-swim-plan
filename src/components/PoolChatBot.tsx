@@ -1,13 +1,81 @@
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, Check, Copy, MapPin, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { PromptInput, PromptInputTextarea, PromptInputFooter, PromptInputSubmit } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
+
+const WHATSAPP = "97333338208";
+const BENEFIT = "33338208";
+const MAPS_URL = "https://maps.app.goo.gl/R2MNAkCgdvFsQqn49?g_st=com.google.maps.preview.copy";
+
+function QuickActions({ lang }: { lang: "ar" | "en" }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyBenefit() {
+    try {
+      await navigator.clipboard.writeText(BENEFIT);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = BENEFIT;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      el.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const label = {
+    ar: { wa: "تواصل واتساب", copy: copied ? "تم النسخ ✓" : `انسخ رقم بنفت (${BENEFIT})`, map: "الموقع" },
+    en: { wa: "WhatsApp us", copy: copied ? "Copied ✓" : `Copy BenefitPay (${BENEFIT})`, map: "Location" },
+  }[lang];
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        className="h-8 gap-1.5 rounded-full text-xs"
+        onClick={() =>
+          window.open(
+            `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
+              lang === "ar" ? "مرحباً، أرغب في الاستفسار عن الحجز" : "Hi, I'd like to ask about a booking",
+            )}`,
+            "_blank",
+            "noopener",
+          )
+        }
+      >
+        <MessageCircle className="size-3.5" /> {label.wa}
+      </Button>
+      <Button size="sm" variant="outline" className="h-8 gap-1.5 rounded-full text-xs" onClick={copyBenefit}>
+        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />} {label.copy}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-8 gap-1.5 rounded-full text-xs"
+        onClick={() => window.open(MAPS_URL, "_blank", "noopener")}
+      >
+        <MapPin className="size-3.5" /> {label.map}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-8 gap-1.5 rounded-full text-xs"
+        onClick={() => window.open("https://privatepool.edgeone.app/", "_blank", "noopener")}
+      >
+        <CalendarDays className="size-3.5" /> {lang === "ar" ? "تفاصيل وصور" : "Details & photos"}
+      </Button>
+    </div>
+  );
+}
+
 
 const T = {
   ar: {
@@ -99,7 +167,7 @@ export function PoolChatBot({ lang }: { lang: "ar" | "en" }) {
                   </div>
                 </div>
               )}
-              {messages.map((m) => (
+              {messages.map((m, i) => (
                 <Message key={m.id} from={m.role}>
                   <MessageContent
                     className={cn(
@@ -110,9 +178,13 @@ export function PoolChatBot({ lang }: { lang: "ar" | "en" }) {
                     <MessageResponse>
                       {m.parts.map((p) => (p.type === "text" ? p.text : "")).join("")}
                     </MessageResponse>
+                    {m.role === "assistant" && i === messages.length - 1 && !busy && (
+                      <QuickActions lang={lang} />
+                    )}
                   </MessageContent>
                 </Message>
               ))}
+
               {status === "submitted" && <Shimmer className="text-sm">{t.thinking}</Shimmer>}
               {error && (
                 <p className="text-xs text-destructive">
