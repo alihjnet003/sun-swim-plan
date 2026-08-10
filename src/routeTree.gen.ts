@@ -9,48 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as SlotsRouteImport } from './routes/slots'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ImportRouteImport } from './routes/import'
-import { Route as CalendarRouteImport } from './routes/calendar'
-import { Route as BackupsRouteImport } from './routes/backups'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BackupsRouteImport } from './routes/backups'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as ImportRouteImport } from './routes/import'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as SlotsRouteImport } from './routes/slots'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as BookingsIndexRouteImport } from './routes/bookings.index'
-import { Route as PublicCalendarRouteImport } from './routes/public.calendar'
 import { Route as BookingsIdRouteImport } from './routes/bookings.$id'
+import { Route as PublicCalendarRouteImport } from './routes/public.calendar'
 import { Route as ApiPublicChatRouteImport } from './routes/api/public/chat'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SlotsRoute = SlotsRouteImport.update({
-  id: '/slots',
-  path: '/slots',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ImportRoute = ImportRouteImport.update({
-  id: '/import',
-  path: '/import',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalendarRoute = CalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BackupsRoute = BackupsRouteImport.update({
@@ -58,9 +33,34 @@ const BackupsRoute = BackupsRouteImport.update({
   path: '/backups',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SlotsRoute = SlotsRouteImport.update({
+  id: '/slots',
+  path: '/slots',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookingsIndexRoute = BookingsIndexRouteImport.update({
@@ -68,14 +68,14 @@ const BookingsIndexRoute = BookingsIndexRouteImport.update({
   path: '/bookings/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PublicCalendarRoute = PublicCalendarRouteImport.update({
-  id: '/public/calendar',
-  path: '/public/calendar',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const BookingsIdRoute = BookingsIdRouteImport.update({
   id: '/bookings/$id',
   path: '/bookings/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicCalendarRoute = PublicCalendarRouteImport.update({
+  id: '/public/calendar',
+  path: '/public/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicChatRoute = ApiPublicChatRouteImport.update({
@@ -202,46 +202,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/slots': {
-      id: '/slots'
-      path: '/slots'
-      fullPath: '/slots'
-      preLoaderRoute: typeof SlotsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/import': {
-      id: '/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof ImportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calendar': {
-      id: '/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof CalendarRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/backups': {
@@ -251,11 +216,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackupsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/slots': {
+      id: '/slots'
+      path: '/slots'
+      fullPath: '/slots'
+      preLoaderRoute: typeof SlotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bookings/': {
@@ -265,18 +265,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/public/calendar': {
-      id: '/public/calendar'
-      path: '/public/calendar'
-      fullPath: '/public/calendar'
-      preLoaderRoute: typeof PublicCalendarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/bookings/$id': {
       id: '/bookings/$id'
       path: '/bookings/$id'
       fullPath: '/bookings/$id'
       preLoaderRoute: typeof BookingsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/public/calendar': {
+      id: '/public/calendar'
+      path: '/public/calendar'
+      fullPath: '/public/calendar'
+      preLoaderRoute: typeof PublicCalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/chat': {
@@ -314,3 +314,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
