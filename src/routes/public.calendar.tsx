@@ -15,6 +15,8 @@ import { useTheme } from "@/lib/theme";
 import { useTimeFormat } from "@/lib/timefmt";
 import { fmtTime } from "@/lib/format";
 import { toast } from "sonner";
+import { PoolChatBot } from "@/components/PoolChatBot";
+
 
 export const Route = createFileRoute("/public/calendar")({
   component: PublicCalendarPage,
@@ -533,6 +535,9 @@ function PublicCalendarPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PoolChatBot lang={lang} />
     </div>
   );
+
 }
