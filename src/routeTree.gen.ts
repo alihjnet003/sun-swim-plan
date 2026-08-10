@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BookingsIndexRouteImport } from './routes/bookings.index'
 import { Route as PublicCalendarRouteImport } from './routes/public.calendar'
 import { Route as BookingsIdRouteImport } from './routes/bookings.$id'
+import { Route as ApiPublicChatRouteImport } from './routes/api/public/chat'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 
 const UsersRoute = UsersRouteImport.update({
@@ -77,6 +78,11 @@ const BookingsIdRoute = BookingsIdRouteImport.update({
   path: '/bookings/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicChatRoute = ApiPublicChatRouteImport.update({
+  id: '/api/public/chat',
+  path: '/api/public/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksDailyBackupRoute =
   ApiPublicHooksDailyBackupRouteImport.update({
     id: '/api/public/hooks/daily-backup',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/bookings/$id': typeof BookingsIdRoute
   '/public/calendar': typeof PublicCalendarRoute
   '/bookings/': typeof BookingsIndexRoute
+  '/api/public/chat': typeof ApiPublicChatRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/bookings/$id': typeof BookingsIdRoute
   '/public/calendar': typeof PublicCalendarRoute
   '/bookings': typeof BookingsIndexRoute
+  '/api/public/chat': typeof ApiPublicChatRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
 }
 export interface FileRoutesById {
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/bookings/$id': typeof BookingsIdRoute
   '/public/calendar': typeof PublicCalendarRoute
   '/bookings/': typeof BookingsIndexRoute
+  '/api/public/chat': typeof ApiPublicChatRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/bookings/$id'
     | '/public/calendar'
     | '/bookings/'
+    | '/api/public/chat'
     | '/api/public/hooks/daily-backup'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/bookings/$id'
     | '/public/calendar'
     | '/bookings'
+    | '/api/public/chat'
     | '/api/public/hooks/daily-backup'
   id:
     | '__root__'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/bookings/$id'
     | '/public/calendar'
     | '/bookings/'
+    | '/api/public/chat'
     | '/api/public/hooks/daily-backup'
   fileRoutesById: FileRoutesById
 }
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   BookingsIdRoute: typeof BookingsIdRoute
   PublicCalendarRoute: typeof PublicCalendarRoute
   BookingsIndexRoute: typeof BookingsIndexRoute
+  ApiPublicChatRoute: typeof ApiPublicChatRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
 }
 
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/chat': {
+      id: '/api/public/chat'
+      path: '/api/public/chat'
+      fullPath: '/api/public/chat'
+      preLoaderRoute: typeof ApiPublicChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/daily-backup': {
       id: '/api/public/hooks/daily-backup'
       path: '/api/public/hooks/daily-backup'
@@ -288,18 +308,9 @@ const rootRouteChildren: RootRouteChildren = {
   BookingsIdRoute: BookingsIdRoute,
   PublicCalendarRoute: PublicCalendarRoute,
   BookingsIndexRoute: BookingsIndexRoute,
+  ApiPublicChatRoute: ApiPublicChatRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
