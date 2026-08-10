@@ -535,6 +535,9 @@ function PublicCalendarPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PoolChatBot lang={lang} />
     </div>
   );
+
 }
