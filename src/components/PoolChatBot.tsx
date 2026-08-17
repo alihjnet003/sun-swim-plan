@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { MessageCircle, X, Check, Copy, MapPin, CalendarDays } from "lucide-react";
+import { MessageCircle, X, Check, Copy, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
@@ -63,14 +63,6 @@ function QuickActions({ lang }: { lang: "ar" | "en" }) {
         onClick={() => window.open(MAPS_URL, "_blank", "noopener")}
       >
         <MapPin className="size-3.5" /> {label.map}
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8 gap-1.5 rounded-full text-xs"
-        onClick={() => window.open("https://privatepool.edgeone.app/", "_blank", "noopener")}
-      >
-        <CalendarDays className="size-3.5" /> {lang === "ar" ? "تفاصيل وصور" : "Details & photos"}
       </Button>
     </div>
   );
