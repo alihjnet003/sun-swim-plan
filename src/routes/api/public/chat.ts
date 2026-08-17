@@ -8,7 +8,7 @@ const BLOCKING = new Set(["new", "confirmed", "completed"]);
 
 const VENUE_INFO = `
 - الاسم: The Private Pool (استراحة خاصة مع مسبح)
-- التفاصيل والصور: https://privatepool.edgeone.app/
+
 - الموقع على الخرائط: https://maps.app.goo.gl/R2MNAkCgdvFsQqn49?g_st=com.google.maps.preview.copy
 - أرقام التواصل والواتساب: 33338208 و 66769202
 - الدفع / بنفت بي (BenefitPay): 33338208
