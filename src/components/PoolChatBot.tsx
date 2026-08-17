@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { MessageCircle, X, Check, Copy, MapPin, CalendarDays } from "lucide-react";
+import { MessageCircle, X, Check, Copy, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
@@ -64,14 +64,6 @@ function QuickActions({ lang }: { lang: "ar" | "en" }) {
       >
         <MapPin className="size-3.5" /> {label.map}
       </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8 gap-1.5 rounded-full text-xs"
-        onClick={() => window.open("https://privatepool.edgeone.app/", "_blank", "noopener")}
-      >
-        <CalendarDays className="size-3.5" /> {lang === "ar" ? "تفاصيل وصور" : "Details & photos"}
-      </Button>
     </div>
   );
 }
@@ -84,7 +76,7 @@ const T = {
     placeholder: "اسأل عن الفترات المتاحة، الأسعار، الموقع...",
     hello: "أهلاً بك 👋 اسألني عن الفترات المتاحة، الأسعار، الموقع، أو طريقة تثبيت الحجز.",
     thinking: "جاري الكتابة...",
-    suggestions: ["الفترات المتاحة هذا الأسبوع", "كم السعر؟", "وين الموقع؟", "كيف أثبت الحجز؟"],
+    suggestions: ["أبغى أحجز فترة", "الفترات المتاحة هذا الأسبوع", "كم السعر؟", "وين الموقع؟"],
   },
   en: {
     title: "Booking assistant",
@@ -92,7 +84,7 @@ const T = {
     placeholder: "Ask about availability, prices, location...",
     hello: "Hi 👋 Ask me about available sessions, prices, the location, or how to confirm a booking.",
     thinking: "Thinking...",
-    suggestions: ["Availability this week", "What are the prices?", "Where is it located?", "How do I confirm?"],
+    suggestions: ["I want to book a session", "Availability this week", "What are the prices?", "Where is it located?"],
   },
 } as const;
 

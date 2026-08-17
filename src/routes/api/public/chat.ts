@@ -8,7 +8,7 @@ const BLOCKING = new Set(["new", "confirmed", "completed"]);
 
 const VENUE_INFO = `
 - الاسم: The Private Pool (استراحة خاصة مع مسبح)
-- التفاصيل والصور: https://privatepool.edgeone.app/
+
 - الموقع على الخرائط: https://maps.app.goo.gl/R2MNAkCgdvFsQqn49?g_st=com.google.maps.preview.copy
 - أرقام التواصل والواتساب: 33338208 و 66769202
 - الدفع / بنفت بي (BenefitPay): 33338208
@@ -83,6 +83,94 @@ export const Route = createFileRoute("/api/public/chat")({
           },
         });
 
+        const toMin = (t: string) => {
+          const [h, m] = t.slice(0, 5).split(":").map(Number);
+          return (h || 0) * 60 + (m || 0);
+        };
+
+        const createBooking = tool({
+          description:
+            "Submit a booking request for the customer after they confirmed the exact date, time and their name+phone. The request goes to the staff as 'pending' until approved.",
+          inputSchema: z.object({
+            date: z.string().describe("Session start date, YYYY-MM-DD"),
+            start_time: z.string().describe("Start time HH:MM (24h)"),
+            end_time: z.string().describe("End time HH:MM (24h). May be earlier than start for overnight."),
+            customer_name: z.string().min(2),
+            phone: z.string().min(6),
+            whatsapp: z.string().optional(),
+            email: z.string().optional(),
+            people_count: z.number().int().positive().optional(),
+            notes: z.string().optional(),
+          }),
+          execute: async (input) => {
+            const nextDay = (iso: string) => {
+              const d = new Date(iso + "T00:00:00Z");
+              d.setUTCDate(d.getUTCDate() + 1);
+              return d.toISOString().slice(0, 10);
+            };
+            const start = toMin(input.start_time);
+            const end = toMin(input.end_time);
+            const overnight = end <= start;
+            const endDate = overnight ? nextDay(input.date) : input.date;
+
+            const { data, error } = await supabase
+              .from("booking_slots")
+              .select("id, date, start_time, end_time, is_closed, bookings(id, booking_status)")
+              .gte("date", input.date)
+              .lte("date", endDate)
+              .order("date")
+              .order("start_time");
+            if (error) return { ok: false, error: error.message };
+
+            const rows = (data ?? []) as unknown as {
+              id: string;
+              date: string;
+              start_time: string;
+              end_time: string;
+              is_closed: boolean;
+              bookings: { id: string; booking_status?: string }[] | null;
+            }[];
+
+            const abs = (d: string, t: string) => (d === input.date ? 0 : 1440) + toMin(t);
+            const wantStart = abs(input.date, input.start_time);
+            const wantEnd = overnight ? 1440 + end : end;
+
+            const picked = rows
+              .filter((s) => {
+                if (s.is_closed) return false;
+                const list = Array.isArray(s.bookings) ? s.bookings : s.bookings ? [s.bookings] : [];
+                if (list.some((b) => b && b.id && BLOCKING.has(b.booking_status ?? "confirmed"))) return false;
+                const a = abs(s.date, s.start_time);
+                const e = a + (toMin(s.end_time) - toMin(s.start_time) || 1440 - toMin(s.start_time));
+                return a >= wantStart && e <= wantEnd;
+              })
+              .sort((a, b) => abs(a.date, a.start_time) - abs(b.date, b.start_time));
+
+            if (picked.length === 0) {
+              return { ok: false, error: "no_matching_free_slots" };
+            }
+            // must fully cover the window and be consecutive
+            let cursor = wantStart;
+            for (const s of picked) {
+              if (abs(s.date, s.start_time) !== cursor) return { ok: false, error: "slots_not_consecutive" };
+              cursor = abs(s.date, s.start_time) + (toMin(s.end_time) - toMin(s.start_time) || 1440 - toMin(s.start_time));
+            }
+            if (cursor < wantEnd) return { ok: false, error: "window_not_fully_available" };
+
+            const { data: res, error: rpcError } = await supabase.rpc("public_book_consecutive_slots", {
+              _slot_ids: picked.map((s) => s.id),
+              _customer_name: input.customer_name,
+              _phone: input.phone,
+              _whatsapp: input.whatsapp ?? input.phone,
+              _email: input.email ?? null,
+              _people_count: input.people_count ?? 1,
+              _notes: input.notes ?? null,
+            });
+            if (rpcError) return { ok: false, error: rpcError.message };
+            return { ok: true, status: "pending_approval", result: res };
+          },
+        });
+
         const result = streamText({
           model: gateway("google/gemini-3.6-flash"),
           stopWhen: stepCountIs(50),
@@ -97,9 +185,13 @@ ${VENUE_INFO}
 - لمعرفة الفترات المتاحة أو الأسعار استخدم أداة getAvailability دائماً — لا تخمّن أبداً.
 - اعرض الفترات كقائمة: التاريخ، الوقت من–إلى، السعر، والحالة.
 - لا تكشف أي معلومات عن العملاء أو الحجوزات الخاصة، فقط "متاح / محجوز / مغلق".
-- لتثبيت الحجز وجّه العميل للدفع عبر بنفت بي على 33338208 ثم إرسال صورة التحويل على الواتساب.`,
+- يمكنك إتمام الحجز مباشرة من المحادثة بأداة createBooking.
+- قبل استدعاء createBooking تأكد من: التاريخ، وقت البداية والنهاية، اسم العميل، ورقم الهاتف/الواتساب. اطلب الناقص واعرض ملخصاً واطلب تأكيد العميل ("نعم أكد") قبل التنفيذ.
+- استخدم getAvailability للتأكد أن الفترة متاحة قبل الحجز.
+- بعد نجاح الحجز: أخبر العميل أن الطلب سُجّل بحالة "بانتظار الموافقة"، ولتثبيته يحوّل المبلغ عبر بنفت بي على 33338208 ويرسل صورة التحويل على الواتساب 33338208.
+- إذا رجعت الأداة خطأ (الفترة غير متاحة أو الحجز العام موقوف) اشرح ذلك بلطف واقترح فترات بديلة أو التواصل عبر الواتساب.`,
           messages: await convertToModelMessages(body.messages as UIMessage[]),
-          tools: { getAvailability },
+          tools: { getAvailability, createBooking },
         });
 
         return result.toUIMessageStreamResponse({
