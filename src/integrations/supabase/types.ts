@@ -17,16 +17,25 @@ export type Database = {
       app_settings: {
         Row: {
           id: number
+          loyalty_discount_percent: number
+          loyalty_enabled: boolean
+          loyalty_threshold: number
           public_booking_enabled: boolean
           updated_at: string
         }
         Insert: {
           id?: number
+          loyalty_discount_percent?: number
+          loyalty_enabled?: boolean
+          loyalty_threshold?: number
           public_booking_enabled?: boolean
           updated_at?: string
         }
         Update: {
           id?: number
+          loyalty_discount_percent?: number
+          loyalty_enabled?: boolean
+          loyalty_threshold?: number
           public_booking_enabled?: boolean
           updated_at?: string
         }
@@ -380,6 +389,7 @@ export type Database = {
         }
         Returns: unknown
       }
+      customer_loyalty: { Args: { _customer_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -397,6 +407,17 @@ export type Database = {
           _phone: string
           _slot_ids: string[]
           _whatsapp?: string
+        }
+        Returns: Json
+      }
+      reschedule_booking: {
+        Args: {
+          _booking_id: string
+          _decisions?: Json
+          _end: string
+          _end_date?: string
+          _new_date: string
+          _start: string
         }
         Returns: Json
       }
