@@ -333,7 +333,7 @@ function ImportPage() {
 
         /* 3b. Auto-adjust overlapping slots on the same day (and next day if overnight). */
         if (newBooking?.id) {
-          let decisions: Record<string, "delete"> = {};
+          let decisions: Record<string, "shrink"> = {};
           for (let attempt = 0; attempt < 3; attempt++) {
             const { data: res, error: rpcErr } = await supabase.rpc("resolve_booking_slot_overlaps", {
               _booking_id: newBooking.id,
@@ -345,7 +345,9 @@ function ImportPage() {
             if (rpcErr) { console.warn("overlap resolve failed:", rpcErr.message); break; }
             const conflicts = (res as any)?.conflicts as Array<{ slot_id: string }> | undefined;
             if (!conflicts || conflicts.length === 0) break;
-            conflicts.forEach((c) => { decisions[c.slot_id] = "delete"; });
+            // Partial overlaps are trimmed, never deleted — the free remainder stays bookable.
+            conflicts.forEach((c) => { decisions[c.slot_id] = "shrink"; });
+
           }
         }
 
