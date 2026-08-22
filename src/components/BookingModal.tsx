@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAvailableSlots, useCustomers, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
+import { useAvailableSlots, useCustomers, useCustomerLoyalty, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
 import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange, bookingRange, nextDay } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -94,6 +94,11 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const total = form.subtotal - form.discount;
   const remaining = Math.max(0, total - form.paid_amount);
   const paymentStatus = computePaymentStatus(form.paid_amount, total);
+
+  // Loyalty card: after N visits, the next booking earns a discount.
+  const { data: loyalty } = useCustomerLoyalty(form.new_customer ? undefined : form.customer_id || undefined);
+  const loyaltyAmount = loyalty ? Math.round(form.subtotal * (Number(loyalty.discount_percent) / 100) * 1000) / 1000 : 0;
+
 
   const targetSlot =
     availableSlots.find((s) => s.id === form.slot_id) ?? booking?.slot ?? slot ?? null;
@@ -320,7 +325,29 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                 </SelectContent>
               </Select>
             )}
+
+            {loyalty?.enabled && (
+              <div className={`mt-3 rounded-md border px-3 py-2 text-sm flex items-center justify-between gap-3 flex-wrap ${loyalty.eligible ? "border-emerald-500/40 bg-emerald-500/10" : "bg-muted"}`}>
+                <div>
+                  <div className="font-medium">
+                    🎟️ بطاقة الولاء · Loyalty card — {loyalty.visits} زيارة
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {loyalty.eligible
+                      ? `هذا الحجز يستحق خصم ${Number(loyalty.discount_percent)}% (${fmtMoney(loyaltyAmount)})`
+                      : `باقي ${loyalty.until_reward} حجز للحصول على خصم ${Number(loyalty.discount_percent)}%`}
+                  </div>
+                </div>
+                {loyalty.eligible && (
+                  <Button type="button" size="sm" variant="outline"
+                    onClick={() => setForm((f) => ({ ...f, discount: loyaltyAmount }))}>
+                    تطبيق الخصم
+                  </Button>
+                )}
+              </div>
+            )}
           </section>
+
 
           {/* Booking */}
           <section>

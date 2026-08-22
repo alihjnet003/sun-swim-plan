@@ -33,6 +33,8 @@ function BookingDetails() {
   const del = useDeleteBooking();
   const [editing, setEditing] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!b) return <div className="p-6">Booking not found.</div>;
@@ -228,6 +230,13 @@ function BookingDetails() {
       </Card>
 
       <BookingModal open={editing} onOpenChange={setEditing} booking={b} />
+      <RescheduleDialog
+        open={rescheduling}
+        onOpenChange={setRescheduling}
+        booking={b}
+        onRescheduled={(newId) => navigate({ to: "/bookings/$id", params: { id: newId } })}
+      />
+
       <PaymentDialog open={paying} onOpenChange={setPaying} booking={b} />
     </div>
   );
