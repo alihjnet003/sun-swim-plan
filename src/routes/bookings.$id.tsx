@@ -109,8 +109,10 @@ function BookingDetails() {
           <Button variant="outline" size="sm" onClick={() => sendReminder("whatsapp")}><MessageSquare className="size-4 mr-1.5" />WhatsApp</Button>
           <Button variant="outline" size="sm" onClick={() => generateInvoicePDF(b, "print")}><Printer className="size-4 mr-1.5" />Print</Button>
           <Button variant="outline" size="sm" onClick={() => generateInvoicePDF(b, "save")}><Download className="size-4 mr-1.5" />PDF</Button>
+          <Button variant="outline" size="sm" onClick={() => setRescheduling(true)}><CalendarClock className="size-4 mr-1.5" />تغيير الموعد</Button>
           <Button size="sm" onClick={() => setEditing(true)}><Edit className="size-4 mr-1.5" />Edit</Button>
           <Button variant="destructive" size="sm" onClick={handleDelete} disabled={del.isPending}><Trash2 className="size-4 mr-1.5" />Delete booking</Button>
+
         </div>
       </div>
 
