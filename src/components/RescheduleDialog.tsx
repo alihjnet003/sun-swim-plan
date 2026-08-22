@@ -30,6 +30,7 @@ export function RescheduleDialog({ open, onOpenChange, booking, onRescheduled }:
   const [end, setEnd] = useState("");
   const [conflicts, setConflicts] = useState<Conflict[] | null>(null);
   const [decisions, setDecisions] = useState<Record<string, "delete" | "shrink">>({});
+  const [newBookingId, setNewBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -38,12 +39,21 @@ export function RescheduleDialog({ open, onOpenChange, booking, onRescheduled }:
     setEnd(toHM(booking.custom_end_time ?? booking.slot?.end_time));
     setConflicts(null);
     setDecisions({});
+    setNewBookingId(null);
   }, [open, booking]);
 
   const isOvernight = !!(start && end && end <= start);
   const endDateIso = isOvernight && date ? nextDay(date) : null;
 
-  async function submit(extraDecisions?: Record<string, "delete" | "shrink">) {
+  function finish(id: string | null) {
+    invalidate();
+    toast.success("تم تغيير الحجز — Booking rescheduled");
+    setConflicts(null);
+    onOpenChange(false);
+    if (id) onRescheduled?.(id);
+  }
+
+  async function submit() {
     if (!date || !start || !end) {
       toast.error("التاريخ ووقت البداية والنهاية مطلوبة");
       return;
@@ -56,10 +66,11 @@ export function RescheduleDialog({ open, onOpenChange, booking, onRescheduled }:
         _start: toDbTime(start),
         _end: toDbTime(end),
         _end_date: endDateIso,
-        _decisions: (extraDecisions ?? {}) as any,
+        _decisions: {} as any,
       } as any);
       if (error) throw error;
       const res = data as { booking_id?: string; conflicts?: Conflict[] };
+      setNewBookingId(res?.booking_id ?? null);
       if (res?.conflicts && res.conflicts.length > 0) {
         const init: Record<string, "delete" | "shrink"> = {};
         res.conflicts.forEach((c) => { init[c.slot_id] = "shrink"; });
@@ -67,16 +78,41 @@ export function RescheduleDialog({ open, onOpenChange, booking, onRescheduled }:
         setConflicts(res.conflicts);
         return;
       }
-      invalidate();
-      toast.success("تم تغيير الحجز — Booking rescheduled");
-      onOpenChange(false);
-      if (res?.booking_id) onRescheduled?.(res.booking_id);
+      finish(res?.booking_id ?? null);
     } catch (e: any) {
       toast.error(e?.message ?? "تعذّر تغيير الحجز");
     } finally {
       setSaving(false);
     }
   }
+
+  // The new booking already exists at this point — only the leftover partial
+  // overlaps still need a decision.
+  async function applyDecisions() {
+    if (!newBookingId) return;
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.rpc("resolve_booking_slot_overlaps", {
+        _booking_id: newBookingId,
+        _start: toDbTime(start),
+        _end: toDbTime(end),
+        _decisions: decisions as any,
+        _end_date: endDateIso,
+      } as any);
+      if (error) throw error;
+      const res = data as { conflicts?: Conflict[] };
+      if (res?.conflicts && res.conflicts.length > 0) {
+        setConflicts(res.conflicts);
+        return;
+      }
+      finish(newBookingId);
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر حل التداخل");
+    } finally {
+      setSaving(false);
+    }
+  }
+
 
   return (
     <>
