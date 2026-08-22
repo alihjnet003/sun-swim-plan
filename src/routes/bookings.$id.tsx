@@ -33,6 +33,8 @@ function BookingDetails() {
   const del = useDeleteBooking();
   const [editing, setEditing] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!b) return <div className="p-6">Booking not found.</div>;
