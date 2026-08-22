@@ -16,6 +16,7 @@ import { useTimeFormat } from "@/lib/timefmt";
 import { fmtTime } from "@/lib/format";
 import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
+import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 
 
 export const Route = createFileRoute("/public/calendar")({
