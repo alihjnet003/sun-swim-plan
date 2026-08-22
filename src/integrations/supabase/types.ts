@@ -19,6 +19,8 @@ export type Database = {
           id: number
           loyalty_discount_percent: number
           loyalty_enabled: boolean
+          loyalty_reward_note: string
+          loyalty_reward_type: string
           loyalty_threshold: number
           public_booking_enabled: boolean
           updated_at: string
@@ -27,6 +29,8 @@ export type Database = {
           id?: number
           loyalty_discount_percent?: number
           loyalty_enabled?: boolean
+          loyalty_reward_note?: string
+          loyalty_reward_type?: string
           loyalty_threshold?: number
           public_booking_enabled?: boolean
           updated_at?: string
@@ -35,6 +39,8 @@ export type Database = {
           id?: number
           loyalty_discount_percent?: number
           loyalty_enabled?: boolean
+          loyalty_reward_note?: string
+          loyalty_reward_type?: string
           loyalty_threshold?: number
           public_booking_enabled?: boolean
           updated_at?: string
