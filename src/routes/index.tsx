@@ -4,10 +4,12 @@ import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
+import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { Button } from "@/components/ui/button";
 import { useBookingsForMonth, useSlotsForMonth } from "@/lib/queries";
 import { fmtDate, fmtMoney, slotTimeRange, todayISO } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
