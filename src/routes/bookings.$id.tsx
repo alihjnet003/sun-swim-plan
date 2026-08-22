@@ -230,6 +230,13 @@ function BookingDetails() {
       </Card>
 
       <BookingModal open={editing} onOpenChange={setEditing} booking={b} />
+      <RescheduleDialog
+        open={rescheduling}
+        onOpenChange={setRescheduling}
+        booking={b}
+        onRescheduled={(newId) => navigate({ to: "/bookings/$id", params: { id: newId } })}
+      />
+
       <PaymentDialog open={paying} onOpenChange={setPaying} booking={b} />
     </div>
   );
