@@ -146,6 +146,30 @@ export function useOvernightInbound(start: string, end: string) {
 }
 
 
+export type Loyalty = {
+  enabled: boolean;
+  visits: number;
+  threshold: number;
+  discount_percent: number;
+  eligible: boolean;
+  until_reward: number;
+};
+
+/** Loyalty card: after `threshold` paid visits the next booking gets a discount. */
+export function useCustomerLoyalty(customerId: string | undefined) {
+  return useQuery({
+    queryKey: ["loyalty", customerId],
+    enabled: !!customerId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("customer_loyalty" as any, {
+        _customer_id: customerId!,
+      } as any);
+      if (error) throw error;
+      return data as unknown as Loyalty;
+    },
+  });
+}
+
 
 export function useAllBookings() {
   return useQuery({
