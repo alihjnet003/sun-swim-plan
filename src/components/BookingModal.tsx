@@ -338,8 +338,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {loyalty.eligible
-                      ? `هذا الحجز يستحق خصم ${Number(loyalty.discount_percent)}% (${fmtMoney(loyaltyAmount)})`
-                      : `باقي ${loyalty.until_reward} حجز للحصول على خصم ${Number(loyalty.discount_percent)}%`}
+                      ? `هذا الحجز يستحق ${rewardLabel} (${fmtMoney(loyaltyAmount)})`
+                      : `باقي ${loyalty.until_reward} حجز للحصول على ${rewardLabel}`}
                   </div>
                 </div>
                 {loyalty.eligible && (
