@@ -190,12 +190,13 @@ export function RescheduleDialog({ open, onOpenChange, booking, onRescheduled }:
             ))}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConflicts(null)} disabled={saving}>رجوع</Button>
-            <Button onClick={() => submit(decisions)} disabled={saving}>
+            <Button variant="outline" onClick={() => finish(newBookingId)} disabled={saving}>لاحقاً</Button>
+            <Button onClick={applyDecisions} disabled={saving}>
               {saving && <Loader2 className="size-4 mr-1.5 animate-spin" />}
               تطبيق
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </>
