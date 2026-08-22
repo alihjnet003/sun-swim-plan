@@ -95,6 +95,11 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const remaining = Math.max(0, total - form.paid_amount);
   const paymentStatus = computePaymentStatus(form.paid_amount, total);
 
+  // Loyalty card: after N visits, the next booking earns a discount.
+  const { data: loyalty } = useCustomerLoyalty(form.new_customer ? undefined : form.customer_id || undefined);
+  const loyaltyAmount = loyalty ? Math.round(form.subtotal * (Number(loyalty.discount_percent) / 100) * 1000) / 1000 : 0;
+
+
   const targetSlot =
     availableSlots.find((s) => s.id === form.slot_id) ?? booking?.slot ?? slot ?? null;
 
