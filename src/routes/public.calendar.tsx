@@ -349,6 +349,8 @@ function PublicCalendarPage() {
           <p className="text-muted-foreground text-sm">{t.subtitle}</p>
         </header>
 
+        <LoyaltyOfferCard lang={lang} />
+
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><PrevIcon className="size-4" /></Button>
           <div className="font-semibold w-40 text-center text-sm sm:text-base">
