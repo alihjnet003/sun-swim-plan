@@ -53,6 +53,8 @@ function Dashboard() {
         </Button>
       </div>
 
+      <LoyaltyOfferCard lang={lang === "ar" ? "ar" : "en"} editable={isAdmin} />
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard label={t("stat.totalBookings")} value={active.length} icon={CalendarDays} tone="primary" />
         <StatCard label={t("stat.confirmed")} value={confirmed} icon={CheckCircle2} tone="success" />
