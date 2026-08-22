@@ -16,6 +16,7 @@ import { useTimeFormat } from "@/lib/timefmt";
 import { fmtTime } from "@/lib/format";
 import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
+import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 
 
 export const Route = createFileRoute("/public/calendar")({
@@ -348,6 +349,8 @@ function PublicCalendarPage() {
           <h1 className="text-2xl sm:text-3xl font-bold">The Private Pool 🏊</h1>
           <p className="text-muted-foreground text-sm">{t.subtitle}</p>
         </header>
+
+        <LoyaltyOfferCard lang={lang} />
 
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><PrevIcon className="size-4" /></Button>

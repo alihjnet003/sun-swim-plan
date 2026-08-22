@@ -4,15 +4,18 @@ import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
+import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { Button } from "@/components/ui/button";
 import { useBookingsForMonth, useSlotsForMonth } from "@/lib/queries";
 import { fmtDate, fmtMoney, slotTimeRange, todayISO } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
 function Dashboard() {
   const { t, lang } = useT();
+  const { isAdmin } = useAuth();
   const [newOpen, setNewOpen] = useState(false);
   const now = new Date();
   const y = now.getFullYear();
@@ -49,6 +52,8 @@ function Dashboard() {
           <Plus className="size-4" /> {t("action.newBooking")}
         </Button>
       </div>
+
+      <LoyaltyOfferCard lang={lang === "ar" ? "ar" : "en"} editable={isAdmin} />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard label={t("stat.totalBookings")} value={active.length} icon={CalendarDays} tone="primary" />

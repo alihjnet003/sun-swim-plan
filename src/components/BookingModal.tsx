@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableSlots, useCustomers, useCustomerLoyalty, useInvalidateAll, type BookingWithRelations, type Slot } from "@/lib/queries";
+import { rewardText, useLoyaltySettings } from "@/lib/loyalty";
 import { computePaymentStatus, fmtDate, fmtMoney, generateBookingNumber, slotTimeRange, bookingRange, nextDay } from "@/lib/format";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -95,9 +96,13 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
   const remaining = Math.max(0, total - form.paid_amount);
   const paymentStatus = computePaymentStatus(form.paid_amount, total);
 
-  // Loyalty card: after N visits, the next booking earns a discount.
+  // Loyalty card: after N visits, the next booking earns the configured reward.
   const { data: loyalty } = useCustomerLoyalty(form.new_customer ? undefined : form.customer_id || undefined);
-  const loyaltyAmount = loyalty ? Math.round(form.subtotal * (Number(loyalty.discount_percent) / 100) * 1000) / 1000 : 0;
+  const { data: loyaltySettings } = useLoyaltySettings();
+  const rewardPercent =
+    loyaltySettings?.loyalty_reward_type === "free" ? 100 : Number(loyalty?.discount_percent ?? 0);
+  const loyaltyAmount = loyalty ? Math.round(form.subtotal * (rewardPercent / 100) * 1000) / 1000 : 0;
+  const rewardLabel = loyaltySettings ? rewardText(loyaltySettings, "ar") : "";
 
 
   const targetSlot =
@@ -334,8 +339,8 @@ export function BookingModal({ open, onOpenChange, slot, booking }: Props) {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {loyalty.eligible
-                      ? `هذا الحجز يستحق خصم ${Number(loyalty.discount_percent)}% (${fmtMoney(loyaltyAmount)})`
-                      : `باقي ${loyalty.until_reward} حجز للحصول على خصم ${Number(loyalty.discount_percent)}%`}
+                      ? `هذا الحجز يستحق ${rewardLabel} (${fmtMoney(loyaltyAmount)})`
+                      : `باقي ${loyalty.until_reward} حجز للحصول على ${rewardLabel}`}
                   </div>
                 </div>
                 {loyalty.eligible && (
