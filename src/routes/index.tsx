@@ -15,6 +15,7 @@ export const Route = createFileRoute("/")({ component: Dashboard });
 
 function Dashboard() {
   const { t, lang } = useT();
+  const { isAdmin } = useAuth();
   const [newOpen, setNewOpen] = useState(false);
   const now = new Date();
   const y = now.getFullYear();
