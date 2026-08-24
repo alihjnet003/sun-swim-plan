@@ -267,6 +267,20 @@ function PublicCalendarPage() {
   const [submitting, setSubmitting] = useState(false);
   const [bookForm, setBookForm] = useState({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
 
+  // First-visit offer popup
+  const [offerPopupOpen, setOfferPopupOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const dismissed = localStorage.getItem("private-pool-offer-popup-dismissed");
+    if (!dismissed) setOfferPopupOpen(true);
+  }, []);
+  const dismissOfferPopup = () => {
+    setOfferPopupOpen(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("private-pool-offer-popup-dismissed", "1");
+    }
+  };
+
   useEffect(() => { setPickedSlotIds([]); }, [selectedDay]);
 
   const pickedSlots = useMemo(
