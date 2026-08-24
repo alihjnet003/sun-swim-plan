@@ -360,7 +360,7 @@ function PublicCalendarPage() {
           <div className="p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3 mb-2">
               <DialogHeader className="text-start">
-                <DialogTitle className="text-lg">{t.title}</DialogTitle>
+                <DialogTitle className="text-lg">{t.offerPopupTitle}</DialogTitle>
               </DialogHeader>
               <Button variant="ghost" size="icon" className="size-8 -mt-1 -me-2" onClick={dismissOfferPopup} aria-label={t.closeOffer}>
                 <X className="size-4" />
