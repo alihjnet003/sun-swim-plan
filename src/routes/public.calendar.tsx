@@ -82,6 +82,7 @@ const T = {
     bookingDisabled: "الحجز عبر الرابط متوقف حالياً. يرجى التواصل معنا على واتساب.",
     pendingNotice: "سيتم مراجعة طلب الحجز والتواصل معكم للتأكيد.",
     closeOffer: "إغلاق العرض",
+    offerPopupTitle: "عرض خاص 🎁",
   },
   en: {
     subtitle: "Private Resort — Public Calendar",
