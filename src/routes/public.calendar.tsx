@@ -17,6 +17,8 @@ import { fmtTime } from "@/lib/format";
 import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
+import { OffersSection } from "@/components/OffersSection";
+import { matchOffer, useOffers } from "@/lib/offers";
 
 
 export const Route = createFileRoute("/public/calendar")({
@@ -271,10 +273,14 @@ function PublicCalendarPage() {
     () => availableSlotsSorted.filter((s) => pickedSlotIds.includes(s.id)),
     [availableSlotsSorted, pickedSlotIds],
   );
-  const pickedTotal = useMemo(
+  const rawTotal = useMemo(
     () => pickedSlots.reduce((sum, s) => sum + Number(s.price ?? 0), 0),
     [pickedSlots],
   );
+  const { data: offers = [] } = useOffers(true);
+  const matched = useMemo(() => matchOffer(offers, pickedSlots), [offers, pickedSlots]);
+  const pickedTotal = matched && matched.price < rawTotal ? matched.price : rawTotal;
+  const offerSaving = rawTotal - pickedTotal;
 
   function togglePick(id: string) {
     setPickedSlotIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -351,6 +357,8 @@ function PublicCalendarPage() {
         </header>
 
         <LoyaltyOfferCard lang={lang} />
+
+        <OffersSection lang={lang} />
 
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="icon" onClick={() => setCursor(new Date(y, m - 1, 1))}><PrevIcon className="size-4" /></Button>

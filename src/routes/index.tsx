@@ -5,6 +5,7 @@ import { StatCard } from "@/components/StatCard";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
+import { OffersSection } from "@/components/OffersSection";
 import { Button } from "@/components/ui/button";
 import { useBookingsForMonth, useSlotsForMonth } from "@/lib/queries";
 import { fmtDate, fmtMoney, slotTimeRange, todayISO } from "@/lib/format";
