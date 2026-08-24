@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { OffersSection } from "@/components/OffersSection";
-import { matchOffer, useOffers } from "@/lib/offers";
+import { matchOffer, offerTitle, useOffers } from "@/lib/offers";
 
 
 export const Route = createFileRoute("/public/calendar")({
@@ -481,6 +481,16 @@ function PublicCalendarPage() {
                 {pickedSlots.length > 0 && (
                   <div className="text-xs text-muted-foreground">
                     {t.total}: <span className="font-semibold text-foreground">{pickedTotal.toFixed(3)} BHD</span>
+                    {offerSaving > 0 && (
+                      <>
+                        {" "}
+                        <span className="line-through">{rawTotal.toFixed(3)}</span>
+                        {" "}
+                        <span className="text-primary font-medium">
+                          🔥 {matched ? offerTitle(matched.offer, lang) : ""} −{offerSaving.toFixed(3)} BHD
+                        </span>
+                      </>
+                    )}
                     {" · "}
                     {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                   </div>
@@ -513,6 +523,11 @@ function PublicCalendarPage() {
                 {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                 {" · "}
                 <span className="font-semibold">{pickedTotal.toFixed(3)} BHD</span>
+                {offerSaving > 0 && (
+                  <div className="text-xs text-primary mt-0.5">
+                    🔥 {matched ? offerTitle(matched.offer, lang) : ""} · −{offerSaving.toFixed(3)} BHD
+                  </div>
+                )}
               </div>
             )}
             <div>
