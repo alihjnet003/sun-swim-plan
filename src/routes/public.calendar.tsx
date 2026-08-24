@@ -353,6 +353,25 @@ function PublicCalendarPage() {
 
   return (
     <div dir={dir} className="min-h-screen bg-background text-foreground">
+      <Dialog open={offerPopupOpen} onOpenChange={(v) => { if (!v) dismissOfferPopup(); }}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
+          <div className="p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <DialogHeader className="text-start">
+                <DialogTitle className="text-lg">{t.title}</DialogTitle>
+              </DialogHeader>
+              <Button variant="ghost" size="icon" className="size-8 -mt-1 -me-2" onClick={dismissOfferPopup} aria-label={t.closeOffer}>
+                <X className="size-4" />
+              </Button>
+            </div>
+            <LoyaltyOfferCard lang={lang} className="border-0 bg-transparent p-0" />
+            <div className="mt-4 flex justify-end">
+              <Button onClick={dismissOfferPopup}>{t.closeOffer}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle dark mode">
