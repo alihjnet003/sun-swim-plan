@@ -5,6 +5,7 @@ import { StatCard } from "@/components/StatCard";
 import { BookingStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
+import { OffersSection } from "@/components/OffersSection";
 import { Button } from "@/components/ui/button";
 import { useBookingsForMonth, useSlotsForMonth } from "@/lib/queries";
 import { fmtDate, fmtMoney, slotTimeRange, todayISO } from "@/lib/format";
@@ -54,6 +55,8 @@ function Dashboard() {
       </div>
 
       <LoyaltyOfferCard lang={lang === "ar" ? "ar" : "en"} editable={isAdmin} />
+
+      <OffersSection lang={lang === "ar" ? "ar" : "en"} editable={isAdmin} />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard label={t("stat.totalBookings")} value={active.length} icon={CalendarDays} tone="primary" />

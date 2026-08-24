@@ -262,6 +262,45 @@ export type Database = {
         }
         Relationships: []
       }
+      offers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          price_holiday: number
+          price_normal: number
+          slots_count: number
+          sort_order: number
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          price_holiday?: number
+          price_normal?: number
+          slots_count?: number
+          sort_order?: number
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          price_holiday?: number
+          price_normal?: number
+          slots_count?: number
+          sort_order?: number
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -403,7 +442,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_holiday_session: {
+        Args: { _date: string; _start: string }
+        Returns: boolean
+      }
       is_staff_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      offer_price_for_slots: { Args: { _slot_ids: string[] }; Returns: number }
       public_book_consecutive_slots: {
         Args: {
           _customer_name: string
