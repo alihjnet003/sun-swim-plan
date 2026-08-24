@@ -121,6 +121,7 @@ const T = {
     bookingDisabled: "Online booking is currently disabled. Please contact us on WhatsApp.",
     pendingNotice: "Your request will be reviewed and we'll contact you to confirm.",
     closeOffer: "Close offer",
+    offerPopupTitle: "Special Offer 🎁",
   },
 } as const;
 
