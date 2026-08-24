@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, MessageCircle, Languages, Loader2, Moon, Sun } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Languages, Loader2, Moon, Sun, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -81,6 +81,8 @@ const T = {
     nameRequired: "الاسم ورقم الهاتف مطلوبان",
     bookingDisabled: "الحجز عبر الرابط متوقف حالياً. يرجى التواصل معنا على واتساب.",
     pendingNotice: "سيتم مراجعة طلب الحجز والتواصل معكم للتأكيد.",
+    closeOffer: "إغلاق العرض",
+    offerPopupTitle: "عرض خاص 🎁",
   },
   en: {
     subtitle: "Private Resort — Public Calendar",
@@ -118,6 +120,8 @@ const T = {
     nameRequired: "Name and phone are required",
     bookingDisabled: "Online booking is currently disabled. Please contact us on WhatsApp.",
     pendingNotice: "Your request will be reviewed and we'll contact you to confirm.",
+    closeOffer: "Close offer",
+    offerPopupTitle: "Special Offer 🎁",
   },
 } as const;
 
@@ -267,6 +271,20 @@ function PublicCalendarPage() {
   const [submitting, setSubmitting] = useState(false);
   const [bookForm, setBookForm] = useState({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
 
+  // First-visit offer popup
+  const [offerPopupOpen, setOfferPopupOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const dismissed = localStorage.getItem("private-pool-offer-popup-dismissed");
+    if (!dismissed) setOfferPopupOpen(true);
+  }, []);
+  const dismissOfferPopup = () => {
+    setOfferPopupOpen(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("private-pool-offer-popup-dismissed", "1");
+    }
+  };
+
   useEffect(() => { setPickedSlotIds([]); }, [selectedDay]);
 
   const pickedSlots = useMemo(
@@ -337,6 +355,25 @@ function PublicCalendarPage() {
 
   return (
     <div dir={dir} className="min-h-screen bg-background text-foreground">
+      <Dialog open={offerPopupOpen} onOpenChange={(v) => { if (!v) dismissOfferPopup(); }}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
+          <div className="p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <DialogHeader className="text-start">
+                <DialogTitle className="text-lg">{t.offerPopupTitle}</DialogTitle>
+              </DialogHeader>
+              <Button variant="ghost" size="icon" className="size-8 -mt-1 -me-2" onClick={dismissOfferPopup} aria-label={t.closeOffer}>
+                <X className="size-4" />
+              </Button>
+            </div>
+            <LoyaltyOfferCard lang={lang} className="border-0 bg-transparent p-0" />
+            <div className="mt-4 flex justify-end">
+              <Button onClick={dismissOfferPopup}>{t.closeOffer}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle dark mode">
