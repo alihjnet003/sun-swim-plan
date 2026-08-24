@@ -10,6 +10,7 @@ export interface Offer {
   price_holiday: number;
   is_active: boolean;
   sort_order: number;
+  show_in_popup: boolean;
 }
 
 export type OfferDraft = Omit<Offer, "id">;
@@ -22,6 +23,7 @@ export const EMPTY_OFFER: OfferDraft = {
   price_holiday: 0,
   is_active: true,
   sort_order: 0,
+  show_in_popup: false,
 };
 
 /** Holiday sessions: Thursday evening, all Friday, Saturday mornings. */
@@ -40,7 +42,7 @@ export function useOffers(activeOnly = false) {
     queryFn: async (): Promise<Offer[]> => {
       let q = supabase
         .from("offers")
-        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, is_active, sort_order")
+        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, is_active, sort_order, show_in_popup")
         .order("sort_order")
         .order("slots_count");
       if (activeOnly) q = q.eq("is_active", true);
@@ -68,6 +70,7 @@ export function useSaveOffer() {
         price_holiday: Math.max(0, Number(offer.price_holiday) || 0),
         is_active: offer.is_active,
         sort_order: Number(offer.sort_order) || 0,
+        show_in_popup: !!offer.show_in_popup,
       };
       const { error } = offer.id
         ? await supabase.from("offers").update(payload).eq("id", offer.id)
@@ -99,6 +102,12 @@ export function matchOffer(
   if (!offer) return null;
   const holiday = picked.some((s) => isHolidaySession(s.date, s.start_time));
   return { offer, price: holiday ? offer.price_holiday : offer.price_normal };
+}
+
+/** The offer the admin picked to show in the public welcome popup. */
+export function usePopupOffer() {
+  const { data: offers = [], ...rest } = useOffers(true);
+  return { offer: offers.find((o) => o.show_in_popup) ?? null, ...rest };
 }
 
 export function offerTitle(o: Offer, lang: "ar" | "en") {

@@ -33,6 +33,8 @@ const L = {
     priceNormal: "سعر العرض — الأيام العادية (د.ب)",
     priceHoliday: "سعر العرض — الإجازات (د.ب)",
     active: "تفعيل العرض",
+    popup: "إظهاره في النافذة المنبثقة",
+    popupBadge: "في النافذة المنبثقة",
     save: "حفظ",
     cancel: "إلغاء",
     saved: "تم حفظ العرض",
@@ -58,6 +60,8 @@ const L = {
     priceNormal: "Offer price — normal days (BHD)",
     priceHoliday: "Offer price — holidays (BHD)",
     active: "Offer active",
+    popup: "Show in welcome popup",
+    popupBadge: "In popup",
     save: "Save",
     cancel: "Cancel",
     saved: "Offer saved",
@@ -106,6 +110,9 @@ export function OffersSection({
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
                 {offerTitle(o, lang)}
+                {o.show_in_popup && (
+                  <span className="text-[10px] rounded-full bg-primary/10 text-primary px-1.5 py-0.5">{t.popupBadge}</span>
+                )}
                 {!o.is_active && (
                   <span className="text-[10px] rounded-full border px-1.5 py-0.5 text-muted-foreground">{t.off}</span>
                 )}
@@ -211,6 +218,11 @@ function OfferDialog({
             <Label htmlFor="offer-active">{t.active}</Label>
             <Switch id="offer-active" checked={form.is_active}
               onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="offer-popup">{t.popup}</Label>
+            <Switch id="offer-popup" checked={form.show_in_popup}
+              onCheckedChange={(v) => setForm({ ...form, show_in_popup: v })} />
           </div>
         </div>
         <DialogFooter>

@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { OffersSection } from "@/components/OffersSection";
+import { offerTitle, usePopupOffer } from "@/lib/offers";
 import { matchOffer, offerTitle, useOffers } from "@/lib/offers";
 
 
@@ -272,6 +273,7 @@ function PublicCalendarPage() {
   const [bookForm, setBookForm] = useState({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
 
   // First-visit offer popup
+  const { offer: popupOffer } = usePopupOffer();
   const [offerPopupOpen, setOfferPopupOpen] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -366,7 +368,20 @@ function PublicCalendarPage() {
                 <X className="size-4" />
               </Button>
             </div>
-            <LoyaltyOfferCard lang={lang} className="border-0 bg-transparent p-0" />
+            {popupOffer ? (
+              <div className="rounded-lg border bg-background px-4 py-3">
+                <div className="font-semibold">🔥 {offerTitle(popupOffer, lang)}</div>
+                <div className="text-sm text-muted-foreground mt-0.5">
+                  {popupOffer.slots_count} {lang === "ar" ? "فترات متتالية" : "consecutive sessions"}
+                </div>
+                <div className="text-sm mt-2 flex gap-4 flex-wrap">
+                  <span>{lang === "ar" ? "الأيام العادية" : "Normal days"}: <b>{popupOffer.price_normal.toFixed(3)} BHD</b></span>
+                  <span>{lang === "ar" ? "الإجازات" : "Holidays"}: <b>{popupOffer.price_holiday.toFixed(3)} BHD</b></span>
+                </div>
+              </div>
+            ) : (
+              <LoyaltyOfferCard lang={lang} className="border-0 bg-transparent p-0" />
+            )}
             <div className="mt-4 flex justify-end">
               <Button onClick={dismissOfferPopup}>{t.closeOffer}</Button>
             </div>
