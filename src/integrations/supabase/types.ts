@@ -269,6 +269,7 @@ export type Database = {
           is_active: boolean
           price_holiday: number
           price_normal: number
+          show_in_popup: boolean
           slots_count: number
           sort_order: number
           title_ar: string
@@ -281,6 +282,7 @@ export type Database = {
           is_active?: boolean
           price_holiday?: number
           price_normal?: number
+          show_in_popup?: boolean
           slots_count?: number
           sort_order?: number
           title_ar?: string
@@ -293,6 +295,7 @@ export type Database = {
           is_active?: boolean
           price_holiday?: number
           price_normal?: number
+          show_in_popup?: boolean
           slots_count?: number
           sort_order?: number
           title_ar?: string
