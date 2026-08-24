@@ -119,6 +119,7 @@ const T = {
     nameRequired: "Name and phone are required",
     bookingDisabled: "Online booking is currently disabled. Please contact us on WhatsApp.",
     pendingNotice: "Your request will be reviewed and we'll contact you to confirm.",
+    closeOffer: "Close offer",
   },
 } as const;
 
