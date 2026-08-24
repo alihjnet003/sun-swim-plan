@@ -91,11 +91,14 @@ function CalendarPage() {
   const [deletingSlot, setDeletingSlot] = useState<Slot | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Cancelled bookings release their slot: the slot goes back to "available"
+  // instead of showing a struck-through cancelled entry.
   const bookingBySlot = useMemo(() => {
     const map = new Map<string, BookingWithRelations>();
-    bookings.forEach((b) => { map.set(b.slot_id, b); });
+    bookings.forEach((b) => { if (b.booking_status !== "cancelled") map.set(b.slot_id, b); });
     return map;
   }, [bookings]);
+
 
   const days = useMemo(() => {
     const first = new Date(y, m, 1);
