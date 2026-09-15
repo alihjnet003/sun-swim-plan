@@ -376,7 +376,37 @@ function PublicCalendarPage() {
     return true;
   }
 
+  async function submitHourly() {
+    if (!selectedDay || hourStart === null) { toast.error(t.selectAtLeastOne); return; }
+    if (!bookForm.name.trim() || !bookForm.phone.trim()) { toast.error(t.nameRequired); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.rpc("public_book_hours", {
+        _date: selectedDay,
+        _start: `${pad(hourStart)}:00:00`,
+        _hours: hourCount,
+        _customer_name: bookForm.name.trim(),
+        _phone: bookForm.phone.trim(),
+        _whatsapp: bookForm.whatsapp.trim() || undefined,
+        _email: undefined,
+        _people_count: bookForm.people,
+        _notes: bookForm.notes.trim() || undefined,
+      });
+      if (error) throw error;
+      toast.success(t.bookingSuccess);
+      setBookingOpen(false);
+      setBookForm({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
+      setSelectedDay(null);
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function submitBooking() {
+    if (mode === "hours") return submitHourly();
     if (pickedSlots.length === 0) { toast.error(t.selectAtLeastOne); return; }
     if (!areConsecutive(pickedSlots)) { toast.error(t.notConsecutive); return; }
     if (!bookForm.name.trim() || !bookForm.phone.trim()) { toast.error(t.nameRequired); return; }
