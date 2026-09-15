@@ -265,6 +265,7 @@ export type Database = {
       offers: {
         Row: {
           created_at: string
+          exclude_holidays: boolean
           id: string
           image_url: string
           is_active: boolean
@@ -279,6 +280,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          exclude_holidays?: boolean
           id?: string
           image_url?: string
           is_active?: boolean
@@ -293,6 +295,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          exclude_holidays?: boolean
           id?: string
           image_url?: string
           is_active?: boolean
