@@ -269,6 +269,7 @@ export type Database = {
           id: string
           image_url: string
           is_active: boolean
+          per_hour: boolean
           price_holiday: number
           price_normal: number
           show_in_popup: boolean
@@ -284,6 +285,7 @@ export type Database = {
           id?: string
           image_url?: string
           is_active?: boolean
+          per_hour?: boolean
           price_holiday?: number
           price_normal?: number
           show_in_popup?: boolean
@@ -299,6 +301,7 @@ export type Database = {
           id?: string
           image_url?: string
           is_active?: boolean
+          per_hour?: boolean
           price_holiday?: number
           price_normal?: number
           show_in_popup?: boolean
@@ -466,6 +469,20 @@ export type Database = {
           _people_count?: number
           _phone: string
           _slot_ids: string[]
+          _whatsapp?: string
+        }
+        Returns: Json
+      }
+      public_book_hours: {
+        Args: {
+          _customer_name: string
+          _date: string
+          _email?: string
+          _hours: number
+          _notes?: string
+          _people_count?: number
+          _phone: string
+          _start: string
           _whatsapp?: string
         }
         Returns: Json
