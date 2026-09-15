@@ -359,6 +359,8 @@ function PublicCalendarPage() {
 
 
   function togglePick(id: string) {
+    setMode("slots");
+    setHourStart(null);
     setPickedSlotIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }
 
