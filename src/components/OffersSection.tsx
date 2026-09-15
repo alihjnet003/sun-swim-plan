@@ -134,7 +134,7 @@ export function OffersSection({
                 </div>
               )}
               <div className="text-xs mt-1 flex gap-3 flex-wrap">
-                <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b></span>
+                <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b>{o.per_hour ? ` / ${t.perHourBadge}` : ""}</span>
                 {o.exclude_holidays ? (
                   <span className="text-muted-foreground">* {t.exclHolidays}</span>
                 ) : (
