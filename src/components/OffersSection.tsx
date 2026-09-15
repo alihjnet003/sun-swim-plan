@@ -65,6 +65,8 @@ const L = {
     priceNormal: "Offer price — normal days (BHD)",
     priceHoliday: "Offer price — holidays (BHD)",
     exclHolidays: "Excludes holidays",
+    perHour: "Hourly price (per hour)",
+    perHourBadge: "per hour",
     active: "Offer active",
     popup: "Show in welcome popup",
     popupBadge: "In popup",
