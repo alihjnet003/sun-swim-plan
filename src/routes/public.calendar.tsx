@@ -368,14 +368,28 @@ function PublicCalendarPage() {
               </Button>
             </div>
             {popupOffer ? (
-              <div className="rounded-lg border bg-background px-4 py-3">
-                <div className="font-semibold">🔥 {offerTitle(popupOffer, lang)}</div>
-                <div className="text-sm text-muted-foreground mt-0.5">
-                  {popupOffer.slots_count} {lang === "ar" ? "فترات متتالية" : "consecutive sessions"}
-                </div>
-                <div className="text-sm mt-2 flex gap-4 flex-wrap">
-                  <span>{lang === "ar" ? "الأيام العادية" : "Normal days"}: <b>{popupOffer.price_normal.toFixed(3)} BHD</b></span>
-                  <span>{lang === "ar" ? "الإجازات" : "Holidays"}: <b>{popupOffer.price_holiday.toFixed(3)} BHD</b></span>
+              <div className="rounded-lg border bg-background overflow-hidden">
+                {popupOffer.image_url && (
+                  <img
+                    src={popupOffer.image_url}
+                    alt={offerTitle(popupOffer, lang)}
+                    className="w-full h-auto"
+                    loading="eager"
+                  />
+                )}
+                <div className="px-4 py-3">
+                  <div className="font-semibold">🔥 {offerTitle(popupOffer, lang)}</div>
+                  {popupOffer.slots_count > 1 && (
+                    <>
+                      <div className="text-sm text-muted-foreground mt-0.5">
+                        {popupOffer.slots_count} {lang === "ar" ? "فترات متتالية" : "consecutive sessions"}
+                      </div>
+                      <div className="text-sm mt-2 flex gap-4 flex-wrap">
+                        <span>{lang === "ar" ? "الأيام العادية" : "Normal days"}: <b>{popupOffer.price_normal.toFixed(3)} BHD</b></span>
+                        <span>{lang === "ar" ? "الإجازات" : "Holidays"}: <b>{popupOffer.price_holiday.toFixed(3)} BHD</b></span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
