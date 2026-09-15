@@ -9,10 +9,23 @@ export interface Offer {
   price_normal: number;
   price_holiday: number;
   exclude_holidays: boolean;
+  per_hour: boolean;
   is_active: boolean;
   sort_order: number;
   show_in_popup: boolean;
   image_url: string;
+}
+
+/** Hours a slot covers; 23:59:59 counts as midnight. */
+export function slotHours(s: { start_time: string; end_time: string }): number {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + (m || 0);
+  };
+  const start = toMin(s.start_time);
+  let end = s.end_time.startsWith("23:59") || s.end_time.startsWith("24:") ? 1440 : toMin(s.end_time);
+  if (end <= start) end += 1440;
+  return (end - start) / 60;
 }
 
 export type OfferDraft = Omit<Offer, "id">;
