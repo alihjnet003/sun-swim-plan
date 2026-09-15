@@ -30,6 +30,7 @@ const L = {
     titleAr: "اسم العرض (عربي)",
     titleEn: "اسم العرض (إنجليزي)",
     slotsCount: "عدد الفترات المتتالية",
+    image: "رابط صورة العرض (اختياري)",
     priceNormal: "سعر العرض — الأيام العادية (د.ب)",
     priceHoliday: "سعر العرض — الإجازات (د.ب)",
     active: "تفعيل العرض",
@@ -57,6 +58,7 @@ const L = {
     titleAr: "Offer name (Arabic)",
     titleEn: "Offer name (English)",
     slotsCount: "Consecutive sessions",
+    image: "Offer image URL (optional)",
     priceNormal: "Offer price — normal days (BHD)",
     priceHoliday: "Offer price — holidays (BHD)",
     active: "Offer active",
@@ -107,6 +109,9 @@ export function OffersSection({
         {offers.length === 0 && <p className="text-sm text-muted-foreground">{t.none}</p>}
         {offers.map((o) => (
           <div key={o.id} className="rounded-lg border bg-background px-3 py-2.5 flex items-start gap-2">
+            {o.image_url && (
+              <img src={o.image_url} alt={offerTitle(o, lang)} className="size-14 rounded-md object-cover shrink-0" loading="lazy" />
+            )}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
                 {offerTitle(o, lang)}
@@ -117,13 +122,17 @@ export function OffersSection({
                   <span className="text-[10px] rounded-full border px-1.5 py-0.5 text-muted-foreground">{t.off}</span>
                 )}
               </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {o.slots_count} {t.slots}
-              </div>
-              <div className="text-xs mt-1 flex gap-3 flex-wrap">
-                <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b></span>
-                <span>{t.holiday}: <b>{o.price_holiday.toFixed(3)} BHD</b></span>
-              </div>
+              {o.slots_count > 1 && (
+                <>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {o.slots_count} {t.slots}
+                  </div>
+                  <div className="text-xs mt-1 flex gap-3 flex-wrap">
+                    <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b></span>
+                    <span>{t.holiday}: <b>{o.price_holiday.toFixed(3)} BHD</b></span>
+                  </div>
+                </>
+              )}
             </div>
             {editable && (
               <div className="flex gap-1">
@@ -198,8 +207,16 @@ function OfferDialog({
             <Input value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} />
           </div>
           <div className="space-y-1.5">
+            <Label>{t.image}</Label>
+            <Input value={form.image_url} placeholder="https://..."
+              onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
+            {form.image_url && (
+              <img src={form.image_url} alt="" className="mt-2 max-h-40 rounded-md object-contain" />
+            )}
+          </div>
+          <div className="space-y-1.5">
             <Label>{t.slotsCount}</Label>
-            <Input type="number" min={2} max={12} value={form.slots_count}
+            <Input type="number" min={1} max={12} value={form.slots_count}
               onChange={(e) => setForm({ ...form, slots_count: Number(e.target.value) })} />
           </div>
           <div className="grid grid-cols-2 gap-3">

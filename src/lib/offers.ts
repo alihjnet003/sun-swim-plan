@@ -11,6 +11,7 @@ export interface Offer {
   is_active: boolean;
   sort_order: number;
   show_in_popup: boolean;
+  image_url: string;
 }
 
 export type OfferDraft = Omit<Offer, "id">;
@@ -24,6 +25,7 @@ export const EMPTY_OFFER: OfferDraft = {
   is_active: true,
   sort_order: 0,
   show_in_popup: false,
+  image_url: "",
 };
 
 /** Holiday sessions: Thursday evening, all Friday, Saturday mornings. */
@@ -42,7 +44,7 @@ export function useOffers(activeOnly = false) {
     queryFn: async (): Promise<Offer[]> => {
       let q = supabase
         .from("offers")
-        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, is_active, sort_order, show_in_popup")
+        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, is_active, sort_order, show_in_popup, image_url")
         .order("sort_order")
         .order("slots_count");
       if (activeOnly) q = q.eq("is_active", true);
@@ -65,12 +67,13 @@ export function useSaveOffer() {
       const payload = {
         title_ar: offer.title_ar,
         title_en: offer.title_en,
-        slots_count: Math.max(2, Number(offer.slots_count) || 2),
+        slots_count: Math.max(1, Number(offer.slots_count) || 1),
         price_normal: Math.max(0, Number(offer.price_normal) || 0),
         price_holiday: Math.max(0, Number(offer.price_holiday) || 0),
         is_active: offer.is_active,
         sort_order: Number(offer.sort_order) || 0,
         show_in_popup: !!offer.show_in_popup,
+        image_url: offer.image_url ?? "",
       };
       const { error } = offer.id
         ? await supabase.from("offers").update(payload).eq("id", offer.id)

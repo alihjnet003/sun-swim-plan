@@ -1,0 +1,1 @@
+ALTER TABLE public.offers ADD COLUMN IF NOT EXISTS image_url text NOT NULL DEFAULT '';
