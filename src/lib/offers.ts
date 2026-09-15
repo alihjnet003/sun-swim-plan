@@ -87,6 +87,7 @@ export function useSaveOffer() {
         price_normal: Math.max(0, Number(offer.price_normal) || 0),
         price_holiday: Math.max(0, Number(offer.price_holiday) || 0),
         exclude_holidays: !!offer.exclude_holidays,
+        per_hour: !!offer.per_hour,
         is_active: offer.is_active,
         sort_order: Number(offer.sort_order) || 0,
         show_in_popup: !!offer.show_in_popup,
