@@ -740,7 +740,14 @@ function PublicCalendarPage() {
             <DialogTitle>{t.yourInfo}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {pickedSlots.length > 0 && (
+            {mode === "hours" && hourStart !== null && (
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                {fmtTime(`${pad(hourStart)}:00:00`)} – {fmtTime(`${pad((hourStart + hourCount) % 24)}:00:00`)}
+                {" · "}
+                <span className="font-semibold">{hourlyTotal.toFixed(3)} BHD</span>
+              </div>
+            )}
+            {mode === "slots" && pickedSlots.length > 0 && (
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
                 {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                 {" · "}
