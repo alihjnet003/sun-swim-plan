@@ -60,7 +60,7 @@ export function useOffers(activeOnly = false) {
     queryFn: async (): Promise<Offer[]> => {
       let q = supabase
         .from("offers")
-        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, exclude_holidays, is_active, sort_order, show_in_popup, image_url")
+        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, exclude_holidays, per_hour, is_active, sort_order, show_in_popup, image_url")
         .order("sort_order")
         .order("slots_count");
       if (activeOnly) q = q.eq("is_active", true);
