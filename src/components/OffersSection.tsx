@@ -250,6 +250,11 @@ function OfferDialog({
             <Switch id="offer-excl-holidays" checked={form.exclude_holidays}
               onCheckedChange={(v) => setForm({ ...form, exclude_holidays: v })} />
           </div>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="offer-per-hour">{t.perHour}</Label>
+            <Switch id="offer-per-hour" checked={form.per_hour}
+              onCheckedChange={(v) => setForm({ ...form, per_hour: v })} />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t.cancel}</Button>
