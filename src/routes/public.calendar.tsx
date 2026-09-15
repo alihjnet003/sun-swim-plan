@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { OffersSection } from "@/components/OffersSection";
-import { matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
+import { hourlyOffer, isHolidaySession, matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
 
 
 export const Route = createFileRoute("/public/calendar")({
@@ -83,6 +83,14 @@ const T = {
     pendingNotice: "سيتم مراجعة طلب الحجز والتواصل معكم للتأكيد.",
     closeOffer: "إغلاق العرض",
     offerPopupTitle: "عرض خاص 🎁",
+    byHour: "احجز بالساعة",
+    bySessions: "احجز فترات كاملة",
+    startAt: "وقت البداية",
+    hoursLabel: "عدد الساعات",
+    perHourNote: (p: string) => `${p} د.ب لكل ساعة`,
+    hourlyHoliday: "الإجازات تُحجز بفترات كاملة (4 ساعات) بسعر ثابت 35 د.ب",
+    noFreeHours: "لا توجد ساعات متاحة في هذا اليوم",
+    bookHours: "احجز هذه الساعات",
   },
   en: {
     subtitle: "Private Resort — Public Calendar",
@@ -122,6 +130,14 @@ const T = {
     pendingNotice: "Your request will be reviewed and we'll contact you to confirm.",
     closeOffer: "Close offer",
     offerPopupTitle: "Special Offer 🎁",
+    byHour: "Book by the hour",
+    bySessions: "Book full sessions",
+    startAt: "Start time",
+    hoursLabel: "Hours",
+    perHourNote: (p: string) => `${p} BHD per hour`,
+    hourlyHoliday: "Holidays are booked as full 4-hour sessions at a fixed 35 BHD",
+    noFreeHours: "No free hours on this day",
+    bookHours: "Book these hours",
   },
 } as const;
 
@@ -301,7 +317,50 @@ function PublicCalendarPage() {
   const pickedTotal = matched && matched.price < rawTotal ? matched.price : rawTotal;
   const offerSaving = rawTotal - pickedTotal;
 
+  // ----- Book by the hour (non-holiday time only) -----
+  const hourly = useMemo(() => hourlyOffer(offers), [offers]);
+  const [mode, setMode] = useState<"slots" | "hours">("slots");
+  const [hourStart, setHourStart] = useState<number | null>(null);
+  const [hourCount, setHourCount] = useState(1);
+
+  /** Hours (0-23) of the selected day that are free and not holiday time. */
+  const freeHours = useMemo(() => {
+    if (!selectedDay) return [] as number[];
+    const toMin = (x: string) => {
+      const [h, mm] = x.split(":").map(Number);
+      return h * 60 + (mm || 0);
+    };
+    const out: number[] = [];
+    for (let h = 0; h < 24; h++) {
+      const hhmm = `${pad(h)}:00:00`;
+      if (isHolidaySession(selectedDay, hhmm)) continue;
+      const covered = availableSlotsSorted.some((s) => {
+        const st = toMin(s.start_time);
+        const en = s.end_time.startsWith("23:59") ? 1440 : toMin(s.end_time) || 1440;
+        return st <= h * 60 && en >= (h + 1) * 60;
+      });
+      if (covered) out.push(h);
+    }
+    return out;
+  }, [selectedDay, availableSlotsSorted]);
+
+  const maxHoursFrom = (start: number) => {
+    let n = 0;
+    while (n < 12 && freeHours.includes(start + n)) n++;
+    return Math.max(n, 1);
+  };
+  const hourlyTotal = hourly ? Math.round(hourly.price_normal * hourCount * 1000) / 1000 : 0;
+
+  useEffect(() => {
+    setHourStart(null);
+    setHourCount(1);
+    setMode("slots");
+  }, [selectedDay]);
+
+
   function togglePick(id: string) {
+    setMode("slots");
+    setHourStart(null);
     setPickedSlotIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }
 
@@ -319,7 +378,37 @@ function PublicCalendarPage() {
     return true;
   }
 
+  async function submitHourly() {
+    if (!selectedDay || hourStart === null) { toast.error(t.selectAtLeastOne); return; }
+    if (!bookForm.name.trim() || !bookForm.phone.trim()) { toast.error(t.nameRequired); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.rpc("public_book_hours", {
+        _date: selectedDay,
+        _start: `${pad(hourStart)}:00:00`,
+        _hours: hourCount,
+        _customer_name: bookForm.name.trim(),
+        _phone: bookForm.phone.trim(),
+        _whatsapp: bookForm.whatsapp.trim() || undefined,
+        _email: undefined,
+        _people_count: bookForm.people,
+        _notes: bookForm.notes.trim() || undefined,
+      });
+      if (error) throw error;
+      toast.success(t.bookingSuccess);
+      setBookingOpen(false);
+      setBookForm({ name: "", phone: "", whatsapp: "", people: 1, notes: "" });
+      setSelectedDay(null);
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function submitBooking() {
+    if (mode === "hours") return submitHourly();
     if (pickedSlots.length === 0) { toast.error(t.selectAtLeastOne); return; }
     if (!areConsecutive(pickedSlots)) { toast.error(t.notConsecutive); return; }
     if (!bookForm.name.trim() || !bookForm.phone.trim()) { toast.error(t.nameRequired); return; }
@@ -546,6 +635,69 @@ function PublicCalendarPage() {
                 </div>
               </div>
             )}
+            {publicBookingEnabled && hourly && (
+              <div className="pt-3 border-t space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">🕒 {t.byHour}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t.perHourNote(hourly.price_normal.toFixed(3))}
+                  </span>
+                </div>
+                {freeHours.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">{t.noFreeHours}</p>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t.startAt}</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {freeHours.map((h) => (
+                          <button
+                            key={h}
+                            type="button"
+                            onClick={() => {
+                              setMode("hours");
+                              setHourStart(h);
+                              setPickedSlotIds([]);
+                              setHourCount((c) => Math.min(c, maxHoursFrom(h)));
+                            }}
+                            className={cn(
+                              "rounded-md border px-2 py-1 text-xs",
+                              mode === "hours" && hourStart === h
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "hover:bg-muted",
+                            )}
+                          >
+                            {fmtTime(`${pad(h)}:00:00`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {mode === "hours" && hourStart !== null && (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <Label className="text-xs">{t.hoursLabel}</Label>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" className="size-8"
+                              onClick={() => setHourCount((c) => Math.max(1, c - 1))}>−</Button>
+                            <span className="w-8 text-center text-sm font-semibold">{hourCount}</span>
+                            <Button variant="outline" size="icon" className="size-8"
+                              disabled={hourCount >= maxHoursFrom(hourStart)}
+                              onClick={() => setHourCount((c) => Math.min(maxHoursFrom(hourStart), c + 1))}>+</Button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {fmtTime(`${pad(hourStart)}:00:00`)} – {fmtTime(`${pad((hourStart + hourCount) % 24)}:00:00`)}
+                          {" · "}
+                          {t.total}: <span className="font-semibold text-foreground">{hourlyTotal.toFixed(3)} BHD</span>
+                        </div>
+                        <Button className="w-full" onClick={() => setBookingOpen(true)}>{t.bookHours}</Button>
+                      </>
+                    )}
+                  </>
+                )}
+                <p className="text-[11px] text-muted-foreground">{t.hourlyHoliday}</p>
+              </div>
+            )}
             {publicBookingEnabled && availableSlotsSorted.length > 0 && (
               <div className="pt-3 border-t space-y-2">
                 {pickedSlots.length > 0 && (
@@ -588,7 +740,14 @@ function PublicCalendarPage() {
             <DialogTitle>{t.yourInfo}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {pickedSlots.length > 0 && (
+            {mode === "hours" && hourStart !== null && (
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                {fmtTime(`${pad(hourStart)}:00:00`)} – {fmtTime(`${pad((hourStart + hourCount) % 24)}:00:00`)}
+                {" · "}
+                <span className="font-semibold">{hourlyTotal.toFixed(3)} BHD</span>
+              </div>
+            )}
+            {mode === "slots" && pickedSlots.length > 0 && (
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
                 {fmtTime(pickedSlots[0].start_time)} – {fmtTime(pickedSlots[pickedSlots.length - 1].end_time)}
                 {" · "}

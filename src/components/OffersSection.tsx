@@ -34,6 +34,8 @@ const L = {
     priceNormal: "سعر العرض — الأيام العادية (د.ب)",
     priceHoliday: "سعر العرض — الإجازات (د.ب)",
     exclHolidays: "لا يشمل الإجازات",
+    perHour: "سعر بالساعة (لكل ساعة)",
+    perHourBadge: "لكل ساعة",
     active: "تفعيل العرض",
     popup: "إظهاره في النافذة المنبثقة",
     popupBadge: "في النافذة المنبثقة",
@@ -63,6 +65,8 @@ const L = {
     priceNormal: "Offer price — normal days (BHD)",
     priceHoliday: "Offer price — holidays (BHD)",
     exclHolidays: "Excludes holidays",
+    perHour: "Hourly price (per hour)",
+    perHourBadge: "per hour",
     active: "Offer active",
     popup: "Show in welcome popup",
     popupBadge: "In popup",
@@ -130,7 +134,7 @@ export function OffersSection({
                 </div>
               )}
               <div className="text-xs mt-1 flex gap-3 flex-wrap">
-                <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b></span>
+                <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b>{o.per_hour ? ` / ${t.perHourBadge}` : ""}</span>
                 {o.exclude_holidays ? (
                   <span className="text-muted-foreground">* {t.exclHolidays}</span>
                 ) : (
@@ -249,6 +253,11 @@ function OfferDialog({
             <Label htmlFor="offer-excl-holidays">{t.exclHolidays}</Label>
             <Switch id="offer-excl-holidays" checked={form.exclude_holidays}
               onCheckedChange={(v) => setForm({ ...form, exclude_holidays: v })} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="offer-per-hour">{t.perHour}</Label>
+            <Switch id="offer-per-hour" checked={form.per_hour}
+              onCheckedChange={(v) => setForm({ ...form, per_hour: v })} />
           </div>
         </div>
         <DialogFooter>
