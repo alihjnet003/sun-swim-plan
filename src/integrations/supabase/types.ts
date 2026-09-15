@@ -266,6 +266,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string
           is_active: boolean
           price_holiday: number
           price_normal: number
@@ -279,6 +280,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string
           is_active?: boolean
           price_holiday?: number
           price_normal?: number
@@ -292,6 +294,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_url?: string
           is_active?: boolean
           price_holiday?: number
           price_normal?: number
