@@ -113,15 +113,33 @@ export function useDeleteOffer() {
   });
 }
 
+/** The active per-hour offer (5 BHD/hour), if any. */
+export function hourlyOffer(offers: Offer[]): Offer | null {
+  return offers.find((o) => o.is_active && o.per_hour) ?? null;
+}
+
 /** Bundle price for the picked sessions, or null when no offer matches. */
 export function matchOffer(
   offers: Offer[],
-  picked: { date: string; start_time: string }[],
+  picked: { date: string; start_time: string; end_time?: string }[],
 ): { offer: Offer; price: number } | null {
   if (picked.length < 1) return null;
   const holiday = picked.some((s) => isHolidaySession(s.date, s.start_time));
+
+  // Non-holiday time is billed per hour when an hourly offer is active.
+  if (!holiday && picked.every((s) => s.end_time)) {
+    const h = hourlyOffer(offers);
+    if (h) {
+      const hours = picked.reduce(
+        (sum, s) => sum + slotHours({ start_time: s.start_time, end_time: s.end_time! }),
+        0,
+      );
+      return { offer: h, price: Math.round(h.price_normal * Math.round(hours) * 1000) / 1000 };
+    }
+  }
+
   const offer = offers.find(
-    (o) => o.is_active && o.slots_count === picked.length && !(holiday && o.exclude_holidays),
+    (o) => o.is_active && !o.per_hour && o.slots_count === picked.length && !(holiday && o.exclude_holidays),
   );
   if (!offer) return null;
   return { offer, price: holiday ? offer.price_holiday : offer.price_normal };
