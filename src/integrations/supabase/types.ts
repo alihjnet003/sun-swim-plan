@@ -438,6 +438,7 @@ export type Database = {
         Returns: unknown
       }
       customer_loyalty: { Args: { _customer_id: string }; Returns: Json }
+      generate_free_slots_for_date: { Args: { _date: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
