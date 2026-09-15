@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { OffersSection } from "@/components/OffersSection";
-import { matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
+import { hourlyOffer, isHolidaySession, matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
 
 
 export const Route = createFileRoute("/public/calendar")({
