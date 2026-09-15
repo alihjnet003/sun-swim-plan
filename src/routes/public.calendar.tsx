@@ -633,6 +633,69 @@ function PublicCalendarPage() {
                 </div>
               </div>
             )}
+            {publicBookingEnabled && hourly && (
+              <div className="pt-3 border-t space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">🕒 {t.byHour}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t.perHourNote(hourly.price_normal.toFixed(3))}
+                  </span>
+                </div>
+                {freeHours.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">{t.noFreeHours}</p>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t.startAt}</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {freeHours.map((h) => (
+                          <button
+                            key={h}
+                            type="button"
+                            onClick={() => {
+                              setMode("hours");
+                              setHourStart(h);
+                              setPickedSlotIds([]);
+                              setHourCount((c) => Math.min(c, maxHoursFrom(h)));
+                            }}
+                            className={cn(
+                              "rounded-md border px-2 py-1 text-xs",
+                              mode === "hours" && hourStart === h
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "hover:bg-muted",
+                            )}
+                          >
+                            {fmtTime(`${pad(h)}:00:00`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {mode === "hours" && hourStart !== null && (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <Label className="text-xs">{t.hoursLabel}</Label>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" className="size-8"
+                              onClick={() => setHourCount((c) => Math.max(1, c - 1))}>−</Button>
+                            <span className="w-8 text-center text-sm font-semibold">{hourCount}</span>
+                            <Button variant="outline" size="icon" className="size-8"
+                              disabled={hourCount >= maxHoursFrom(hourStart)}
+                              onClick={() => setHourCount((c) => Math.min(maxHoursFrom(hourStart), c + 1))}>+</Button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {fmtTime(`${pad(hourStart)}:00:00`)} – {fmtTime(`${pad((hourStart + hourCount) % 24)}:00:00`)}
+                          {" · "}
+                          {t.total}: <span className="font-semibold text-foreground">{hourlyTotal.toFixed(3)} BHD</span>
+                        </div>
+                        <Button className="w-full" onClick={() => setBookingOpen(true)}>{t.bookHours}</Button>
+                      </>
+                    )}
+                  </>
+                )}
+                <p className="text-[11px] text-muted-foreground">{t.hourlyHoliday}</p>
+              </div>
+            )}
             {publicBookingEnabled && availableSlotsSorted.length > 0 && (
               <div className="pt-3 border-t space-y-2">
                 {pickedSlots.length > 0 && (
