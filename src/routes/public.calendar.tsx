@@ -379,6 +379,11 @@ function PublicCalendarPage() {
                 )}
                 <div className="px-4 py-3">
                   <div className="font-semibold">🔥 {offerTitle(popupOffer, lang)}</div>
+                  {popupOffer.exclude_holidays && (
+                    <div className="text-xs text-muted-foreground">
+                      * {lang === "ar" ? "العرض لا يشمل الإجازات" : "Offer excludes holidays"}
+                    </div>
+                  )}
                   {popupOffer.slots_count > 1 && (
                     <>
                       <div className="text-sm text-muted-foreground mt-0.5">

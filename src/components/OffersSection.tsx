@@ -33,6 +33,7 @@ const L = {
     image: "رابط صورة العرض (اختياري)",
     priceNormal: "سعر العرض — الأيام العادية (د.ب)",
     priceHoliday: "سعر العرض — الإجازات (د.ب)",
+    exclHolidays: "لا يشمل الإجازات",
     active: "تفعيل العرض",
     popup: "إظهاره في النافذة المنبثقة",
     popupBadge: "في النافذة المنبثقة",
@@ -61,6 +62,7 @@ const L = {
     image: "Offer image URL (optional)",
     priceNormal: "Offer price — normal days (BHD)",
     priceHoliday: "Offer price — holidays (BHD)",
+    exclHolidays: "Excludes holidays",
     active: "Offer active",
     popup: "Show in welcome popup",
     popupBadge: "In popup",
@@ -123,16 +125,18 @@ export function OffersSection({
                 )}
               </div>
               {o.slots_count > 1 && (
-                <>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {o.slots_count} {t.slots}
-                  </div>
-                  <div className="text-xs mt-1 flex gap-3 flex-wrap">
-                    <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b></span>
-                    <span>{t.holiday}: <b>{o.price_holiday.toFixed(3)} BHD</b></span>
-                  </div>
-                </>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {o.slots_count} {t.slots}
+                </div>
               )}
+              <div className="text-xs mt-1 flex gap-3 flex-wrap">
+                <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b></span>
+                {o.exclude_holidays ? (
+                  <span className="text-muted-foreground">* {t.exclHolidays}</span>
+                ) : (
+                  <span>{t.holiday}: <b>{o.price_holiday.toFixed(3)} BHD</b></span>
+                )}
+              </div>
             </div>
             {editable && (
               <div className="flex gap-1">
@@ -240,6 +244,11 @@ function OfferDialog({
             <Label htmlFor="offer-popup">{t.popup}</Label>
             <Switch id="offer-popup" checked={form.show_in_popup}
               onCheckedChange={(v) => setForm({ ...form, show_in_popup: v })} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="offer-excl-holidays">{t.exclHolidays}</Label>
+            <Switch id="offer-excl-holidays" checked={form.exclude_holidays}
+              onCheckedChange={(v) => setForm({ ...form, exclude_holidays: v })} />
           </div>
         </div>
         <DialogFooter>
