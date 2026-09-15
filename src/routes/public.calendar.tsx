@@ -130,6 +130,14 @@ const T = {
     pendingNotice: "Your request will be reviewed and we'll contact you to confirm.",
     closeOffer: "Close offer",
     offerPopupTitle: "Special Offer 🎁",
+    byHour: "Book by the hour",
+    bySessions: "Book full sessions",
+    startAt: "Start time",
+    hoursLabel: "Hours",
+    perHourNote: (p: string) => `${p} BHD per hour`,
+    hourlyHoliday: "Holidays are booked as full 4-hour sessions at a fixed 35 BHD",
+    noFreeHours: "No free hours on this day",
+    bookHours: "Book these hours",
   },
 } as const;
 
