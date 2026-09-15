@@ -317,6 +317,47 @@ function PublicCalendarPage() {
   const pickedTotal = matched && matched.price < rawTotal ? matched.price : rawTotal;
   const offerSaving = rawTotal - pickedTotal;
 
+  // ----- Book by the hour (non-holiday time only) -----
+  const hourly = useMemo(() => hourlyOffer(offers), [offers]);
+  const [mode, setMode] = useState<"slots" | "hours">("slots");
+  const [hourStart, setHourStart] = useState<number | null>(null);
+  const [hourCount, setHourCount] = useState(1);
+
+  /** Hours (0-23) of the selected day that are free and not holiday time. */
+  const freeHours = useMemo(() => {
+    if (!selectedDay) return [] as number[];
+    const toMin = (x: string) => {
+      const [h, mm] = x.split(":").map(Number);
+      return h * 60 + (mm || 0);
+    };
+    const out: number[] = [];
+    for (let h = 0; h < 24; h++) {
+      const hhmm = `${pad(h)}:00:00`;
+      if (isHolidaySession(selectedDay, hhmm)) continue;
+      const covered = availableSlotsSorted.some((s) => {
+        const st = toMin(s.start_time);
+        const en = s.end_time.startsWith("23:59") ? 1440 : toMin(s.end_time) || 1440;
+        return st <= h * 60 && en >= (h + 1) * 60;
+      });
+      if (covered) out.push(h);
+    }
+    return out;
+  }, [selectedDay, availableSlotsSorted]);
+
+  const maxHoursFrom = (start: number) => {
+    let n = 0;
+    while (n < 12 && freeHours.includes(start + n)) n++;
+    return Math.max(n, 1);
+  };
+  const hourlyTotal = hourly ? Math.round(hourly.price_normal * hourCount * 1000) / 1000 : 0;
+
+  useEffect(() => {
+    setHourStart(null);
+    setHourCount(1);
+    setMode("slots");
+  }, [selectedDay]);
+
+
   function togglePick(id: string) {
     setPickedSlotIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }
