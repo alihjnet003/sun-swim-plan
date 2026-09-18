@@ -691,8 +691,17 @@ function PublicCalendarPage() {
                         <div className="text-xs text-muted-foreground">
                           {fmtTime(`${pad(hourStart)}:00:00`)} – {fmtTime(`${pad((hourStart + hourCount) % 24)}:00:00`)}
                           {" · "}
-                          {t.total}: <span className="font-semibold text-foreground">{hourlyTotal.toFixed(3)} BHD</span>
+                          {t.total}:{" "}
+                          {hourlySaving > 0 && (
+                            <span className="line-through opacity-60 me-1">{hourlyPlain.toFixed(3)}</span>
+                          )}
+                          <span className="font-semibold text-foreground">{hourlyTotal.toFixed(3)} BHD</span>
                         </div>
+                        {hourlySaving > 0 && hourlyPriced && (
+                          <div className="text-[11px] rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-1">
+                            🔥 {offerTitle(hourlyPriced.offer, lang)} · −{hourlySaving.toFixed(3)} BHD
+                          </div>
+                        )}
                         <Button className="w-full" onClick={() => setBookingOpen(true)}>{t.bookHours}</Button>
                       </>
                     )}
