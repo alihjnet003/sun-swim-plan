@@ -36,6 +36,9 @@ const L = {
     exclHolidays: "لا يشمل الإجازات",
     perHour: "سعر بالساعة (لكل ساعة)",
     perHourBadge: "لكل ساعة",
+    bundleHours: "ساعات مدفوعة (باقة)",
+    freeHours: "ساعات مجانية",
+    bundleBadge: (p: number, f: number) => `${p} ساعات + ${f} مجانية`,
     active: "تفعيل العرض",
     popup: "إظهاره في النافذة المنبثقة",
     popupBadge: "في النافذة المنبثقة",
@@ -67,6 +70,9 @@ const L = {
     exclHolidays: "Excludes holidays",
     perHour: "Hourly price (per hour)",
     perHourBadge: "per hour",
+    bundleHours: "Paid hours (bundle)",
+    freeHours: "Free hours",
+    bundleBadge: (p: number, f: number) => `${p} hours + ${f} free`,
     active: "Offer active",
     popup: "Show in welcome popup",
     popupBadge: "In popup",
@@ -226,6 +232,18 @@ function OfferDialog({
             <Label>{t.slotsCount}</Label>
             <Input type="number" min={1} max={12} value={form.slots_count}
               onChange={(e) => setForm({ ...form, slots_count: Number(e.target.value) })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{t.bundleHours}</Label>
+              <Input type="number" min={0} max={24} value={form.bundle_hours}
+                onChange={(e) => setForm({ ...form, bundle_hours: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t.freeHours}</Label>
+              <Input type="number" min={0} max={24} value={form.free_hours}
+                onChange={(e) => setForm({ ...form, free_hours: Number(e.target.value) })} />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
