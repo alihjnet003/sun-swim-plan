@@ -134,11 +134,15 @@ export function OffersSection({
                   <span className="text-[10px] rounded-full border px-1.5 py-0.5 text-muted-foreground">{t.off}</span>
                 )}
               </div>
-              {o.slots_count > 1 && (
+              {o.bundle_hours > 0 ? (
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {t.bundleBadge(o.bundle_hours, o.free_hours)}
+                </div>
+              ) : o.slots_count > 1 ? (
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {o.slots_count} {t.slots}
                 </div>
-              )}
+              ) : null}
               <div className="text-xs mt-1 flex gap-3 flex-wrap">
                 <span>{t.normal}: <b>{o.price_normal.toFixed(3)} BHD</b>{o.per_hour ? ` / ${t.perHourBadge}` : ""}</span>
                 {o.exclude_holidays ? (
