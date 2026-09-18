@@ -40,6 +40,8 @@ export const EMPTY_OFFER: OfferDraft = {
   price_holiday: 0,
   exclude_holidays: false,
   per_hour: false,
+  bundle_hours: 0,
+  free_hours: 0,
   is_active: true,
   sort_order: 0,
   show_in_popup: false,
