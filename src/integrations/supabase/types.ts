@@ -264,8 +264,10 @@ export type Database = {
       }
       offers: {
         Row: {
+          bundle_hours: number
           created_at: string
           exclude_holidays: boolean
+          free_hours: number
           id: string
           image_url: string
           is_active: boolean
@@ -280,8 +282,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bundle_hours?: number
           created_at?: string
           exclude_holidays?: boolean
+          free_hours?: number
           id?: string
           image_url?: string
           is_active?: boolean
@@ -296,8 +300,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bundle_hours?: number
           created_at?: string
           exclude_holidays?: boolean
+          free_hours?: number
           id?: string
           image_url?: string
           is_active?: boolean
@@ -455,6 +461,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hourly_price: { Args: { _hours: number }; Returns: number }
       is_holiday_session: {
         Args: { _date: string; _start: string }
         Returns: boolean
