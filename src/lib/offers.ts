@@ -10,6 +10,8 @@ export interface Offer {
   price_holiday: number;
   exclude_holidays: boolean;
   per_hour: boolean;
+  bundle_hours: number;
+  free_hours: number;
   is_active: boolean;
   sort_order: number;
   show_in_popup: boolean;
