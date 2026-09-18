@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { OffersSection } from "@/components/OffersSection";
-import { hourlyOffer, isHolidaySession, matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
+import { hourlyOffer, hourlyPrice, isHolidaySession, matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
 
 
 export const Route = createFileRoute("/public/calendar")({
@@ -349,7 +349,10 @@ function PublicCalendarPage() {
     while (n < 12 && freeHours.includes(start + n)) n++;
     return Math.max(n, 1);
   };
-  const hourlyTotal = hourly ? Math.round(hourly.price_normal * hourCount * 1000) / 1000 : 0;
+  const hourlyPriced = useMemo(() => hourlyPrice(offers, hourCount), [offers, hourCount]);
+  const hourlyTotal = hourlyPriced ? hourlyPriced.price : 0;
+  const hourlyPlain = hourly ? Math.round(hourly.price_normal * hourCount * 1000) / 1000 : 0;
+  const hourlySaving = Math.max(0, Math.round((hourlyPlain - hourlyTotal) * 1000) / 1000);
 
   useEffect(() => {
     setHourStart(null);
@@ -688,8 +691,17 @@ function PublicCalendarPage() {
                         <div className="text-xs text-muted-foreground">
                           {fmtTime(`${pad(hourStart)}:00:00`)} – {fmtTime(`${pad((hourStart + hourCount) % 24)}:00:00`)}
                           {" · "}
-                          {t.total}: <span className="font-semibold text-foreground">{hourlyTotal.toFixed(3)} BHD</span>
+                          {t.total}:{" "}
+                          {hourlySaving > 0 && (
+                            <span className="line-through opacity-60 me-1">{hourlyPlain.toFixed(3)}</span>
+                          )}
+                          <span className="font-semibold text-foreground">{hourlyTotal.toFixed(3)} BHD</span>
                         </div>
+                        {hourlySaving > 0 && hourlyPriced && (
+                          <div className="text-[11px] rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-1">
+                            🔥 {offerTitle(hourlyPriced.offer, lang)} · −{hourlySaving.toFixed(3)} BHD
+                          </div>
+                        )}
                         <Button className="w-full" onClick={() => setBookingOpen(true)}>{t.bookHours}</Button>
                       </>
                     )}

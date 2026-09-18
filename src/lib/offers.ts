@@ -10,6 +10,8 @@ export interface Offer {
   price_holiday: number;
   exclude_holidays: boolean;
   per_hour: boolean;
+  bundle_hours: number;
+  free_hours: number;
   is_active: boolean;
   sort_order: number;
   show_in_popup: boolean;
@@ -38,6 +40,8 @@ export const EMPTY_OFFER: OfferDraft = {
   price_holiday: 0,
   exclude_holidays: false,
   per_hour: false,
+  bundle_hours: 0,
+  free_hours: 0,
   is_active: true,
   sort_order: 0,
   show_in_popup: false,
@@ -60,7 +64,7 @@ export function useOffers(activeOnly = false) {
     queryFn: async (): Promise<Offer[]> => {
       let q = supabase
         .from("offers")
-        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, exclude_holidays, per_hour, is_active, sort_order, show_in_popup, image_url")
+        .select("id, title_ar, title_en, slots_count, price_normal, price_holiday, exclude_holidays, per_hour, bundle_hours, free_hours, is_active, sort_order, show_in_popup, image_url")
         .order("sort_order")
         .order("slots_count");
       if (activeOnly) q = q.eq("is_active", true);
@@ -88,6 +92,8 @@ export function useSaveOffer() {
         price_holiday: Math.max(0, Number(offer.price_holiday) || 0),
         exclude_holidays: !!offer.exclude_holidays,
         per_hour: !!offer.per_hour,
+        bundle_hours: Math.max(0, Number(offer.bundle_hours) || 0),
+        free_hours: Math.max(0, Number(offer.free_hours) || 0),
         is_active: offer.is_active,
         sort_order: Number(offer.sort_order) || 0,
         show_in_popup: !!offer.show_in_popup,
@@ -118,6 +124,34 @@ export function hourlyOffer(offers: Offer[]): Offer | null {
   return offers.find((o) => o.is_active && o.per_hour) ?? null;
 }
 
+/** Hour bundles, e.g. "3 hours + 1 free hour for 15 BHD". */
+export function bundleOffers(offers: Offer[]): Offer[] {
+  return offers.filter((o) => o.is_active && o.bundle_hours > 0);
+}
+
+/**
+ * Best price for `hours` of non-holiday time: plain hourly rate, or hour
+ * bundles applied as many times as they fit with the remainder billed hourly.
+ */
+export function hourlyPrice(
+  offers: Offer[],
+  hours: number,
+): { offer: Offer; price: number } | null {
+  const h = hourlyOffer(offers);
+  if (!h || hours <= 0) return null;
+  let best = h.price_normal * hours;
+  let bestOffer = h;
+  for (const b of bundleOffers(offers)) {
+    const block = b.bundle_hours + Math.max(0, b.free_hours);
+    if (block < 1) continue;
+    const blocks = Math.floor(hours / block);
+    if (blocks < 1) continue;
+    const price = blocks * b.price_normal + (hours - blocks * block) * h.price_normal;
+    if (price < best) { best = price; bestOffer = b; }
+  }
+  return { offer: bestOffer, price: Math.round(best * 1000) / 1000 };
+}
+
 /** Bundle price for the picked sessions, or null when no offer matches. */
 export function matchOffer(
   offers: Offer[],
@@ -128,18 +162,17 @@ export function matchOffer(
 
   // Non-holiday time is billed per hour when an hourly offer is active.
   if (!holiday && picked.every((s) => s.end_time)) {
-    const h = hourlyOffer(offers);
-    if (h) {
-      const hours = picked.reduce(
-        (sum, s) => sum + slotHours({ start_time: s.start_time, end_time: s.end_time! }),
-        0,
-      );
-      return { offer: h, price: Math.round(h.price_normal * Math.round(hours) * 1000) / 1000 };
-    }
+    const hours = picked.reduce(
+      (sum, s) => sum + slotHours({ start_time: s.start_time, end_time: s.end_time! }),
+      0,
+    );
+    const hp = hourlyPrice(offers, Math.round(hours));
+    if (hp) return hp;
   }
 
   const offer = offers.find(
-    (o) => o.is_active && !o.per_hour && o.slots_count === picked.length && !(holiday && o.exclude_holidays),
+    (o) => o.is_active && !o.per_hour && o.bundle_hours === 0 &&
+      o.slots_count === picked.length && !(holiday && o.exclude_holidays),
   );
   if (!offer) return null;
   return { offer, price: holiday ? offer.price_holiday : offer.price_normal };
