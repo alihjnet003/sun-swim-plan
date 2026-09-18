@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { PoolChatBot } from "@/components/PoolChatBot";
 import { LoyaltyOfferCard } from "@/components/LoyaltyOfferCard";
 import { OffersSection } from "@/components/OffersSection";
-import { hourlyOffer, isHolidaySession, matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
+import { hourlyOffer, hourlyPrice, isHolidaySession, matchOffer, offerTitle, useOffers, usePopupOffer } from "@/lib/offers";
 
 
 export const Route = createFileRoute("/public/calendar")({
@@ -349,7 +349,10 @@ function PublicCalendarPage() {
     while (n < 12 && freeHours.includes(start + n)) n++;
     return Math.max(n, 1);
   };
-  const hourlyTotal = hourly ? Math.round(hourly.price_normal * hourCount * 1000) / 1000 : 0;
+  const hourlyPriced = useMemo(() => hourlyPrice(offers, hourCount), [offers, hourCount]);
+  const hourlyTotal = hourlyPriced ? hourlyPriced.price : 0;
+  const hourlyPlain = hourly ? Math.round(hourly.price_normal * hourCount * 1000) / 1000 : 0;
+  const hourlySaving = Math.max(0, Math.round((hourlyPlain - hourlyTotal) * 1000) / 1000);
 
   useEffect(() => {
     setHourStart(null);
